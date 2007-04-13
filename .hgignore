@@ -1,0 +1,7 @@
+syntax: glob
+*.class
+*.log
+*.rej
+*.orig
+localhost.bat
+JavierSictel.bat

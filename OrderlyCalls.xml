@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+__________________________________________________________
+
+Copyright 2004-2005 Matt King M.A. Oxon. for Orderly Software Ltd.
+
+All rights reserved.
+
+You may freely modify this file.
+__________________________________________________________
+
+ORDERLY CALLS CONFIGURATION FILE
+
+This file contains the master settings for the OrderlyCalls system.
+
+OrderlyCalls runs any number of Named Services.  Each kind of service is 
+defined in the Definitions section, and then instances of each kind of service
+are defined in the Services section.
+
+The file is user-extensible, so you can put your own settings in here
+too, and create your own services.
+
+This means that there is no DTD for this file.
+
+Master Settings:
+
+	logLevel: 
+		Valid logLevels are SEVERE, WARNING, INFO (default), 
+		FINE, FINER, ALL.
+-->
+
+<OrderlyCalls logLevel="INFO">
+	<!--
+	The Defintions section defines the types of service we will run.
+	Each DefineService element has the following attributes:
+		tag:	Required.
+			The tag name we will use to identify this type of 
+			service in this XML file.
+			
+		class:	Required.
+			The class that implements this service.  Must implement
+			com.orderlysoftware.orderlycalls.base.Service.
+		
+		settings: Optional.
+			The class that will receive the XML data used to 
+			define/initialise the service.  Default is 
+			com.orderlysoftware.orderlycalls.base.Settings.
+			Extend this class to provide your own 
+			XML structure & handling.	
+	-->
+	<Definitions>
+		<DefineService 
+			tag="ExampleService" 
+			class="com.orderlysoftware.orderlycalls.examples.ExampleService" /> 
+		<DefineService 
+			tag="AGIServer" 
+			class="com.orderlysoftware.orderlycalls.asterisk.agi.AGIServer" 
+			settings="com.orderlysoftware.orderlycalls.asterisk.agi.AGISettings" />
+		<DefineService
+			tag="ManagerClient" 
+			class="com.orderlysoftware.orderlycalls.asterisk.manager.ManagerClient"
+			settings="com.orderlysoftware.orderlycalls.asterisk.manager.ManagerSettings" />
+	</Definitions>
+<!--
+Services:
+
+	You may define any number of Services.  These are started in order
+	listed by OrderlyCalls, and shutdown in reverse order when finishing.
+	
+	You can implement your own services by implementing the Service
+	interface (in com.orderlysoftware.orderlycalls.base).
+		
+	You may pass settings to these services by adding attributes or
+	child tags to the Service tag.  You may then retrieve these 
+	settings by calling OrderlyCalls.getSettings(name).
+
+	Each element type in the Services tag must have a corresponding 
+	definition in the Defintions section.	
+-->
+	<Services>
+		<!-- The ExampleService simply prints a message on init() 
+		and shutdown().  Comment out the following line to suppress.
+		
+		name:	Required.
+			All services must include the name attribute.  To
+			access the service within Java call 
+			OrderlyCalls.getService(name).
+
+		ExampleService also offers very basic authentication through the
+		username and password attributes.
+		-->
+		<ExampleService name="login" username="admin" password="changeMe"/>
+
+<!--
+	ManagerClient:
+	You may define any number of ManagerClients to represent
+	different connections to different Asterisk servers.
+
+	It's a good idea to list them before your AGIServers.
+
+	You can access the settings, including any settings you decide to add,
+	by calling OrderlyCalls.getSettings("name").
+		
+	host:
+		Required. The host name or IP address of the target Asterisk 
+		server.
+
+	port:
+		Optional. The connection port on the target Asterisk server.
+		Default is 5038.
+
+	username:  
+		Required. The Manager login username.
+
+	password:  
+		Required. The Manager login password.
+
+	actionTimeout: 
+		Optional timeout to wait for unacknowledged Manager actions.
+		Defaults to 10000ms (10 seconds).
+
+	
+ 	The following example is commented out as you must configure
+	Asterisk's managers.conf file before using the Manager interface.
+	
+		<ManagerClient
+			name="default"
+			host="localhost" 
+			port="5038" 
+			username="OrderlyCalls" 
+			password="changeMe" 
+			actionTimeout="10000" >
+	-->
+	
+	<!-- You may also define any number of ManagerEventListener elements
+	inside the ManagerClient element.
+	
+	These are added to this ManagerClient on startup.  
+	
+	You may extend this element to supply your own 
+	class- or object-dependent settings.
+
+	See com.orderlysoftware.orderlycalls.examples.ExampleManagerEventListener for a worked example.
+	
+			<ManagerEventListener 
+				name="default"
+				class="com.orderlysoftware.orderlycalls.examples.ExampleManagerEventListener" />
+
+	-->
+	<!--
+		</ManagerClient>
+	-->
+<!--
+AgiServer:
+	The AGIServer element defines an AGIServer instance.  
+	You may run multiple AGIServers by defining multiple elements 
+	in this file, so long as they are named uniquely.
+
+	They are started in the order listed.
+	
+	processorClass:
+		Fully qualified class and package name of the processor
+		to run in this AGIServer instance.
+		
+		Default is the OrderlyQExample processor.
+		You will need to unpack OrderlyCallsSounds.tar.gz into
+		your /var/lib/asterisk/sounds directory for this to work.
+	
+	You may add other attributes and child nodes to this element to 
+	encapsulate your own settings.  You can access these settings within 
+	your own code by calling OrderlyCalls.getSettings(name), 
+	or AGIClient.getSettings().
+-->
+
+		<AGIServer 
+			name="master"
+			processorClass="com.orderlysoftware.orderlycalls.examples.OrderlyQExample">
+		<!-- 
+		Bind:
+		For each AGIServer you may specify a list of 
+		IP addresses/domains and ports to bind.
+
+		Restricting incoming connections to specific originating
+		hosts is also supported (see Accept element below).
+		
+		If no Bind elements are present, the default example is used.
+		
+		host:
+			Optional. If absent listens on all local interfaces.
+		
+		port:
+			Optional. Defaults to 4573.
+	
+		Examples:
+		
+		Default: Listen on all interfaces, accept all connections.
+			<Bind port="4573" />
+		
+		Listen for connections from localhost only:
+			<Bind host="localhost" port="4573" />
+
+		Listen for connections from local network only:
+			<Bind host="192.168.0.1" port="4573" />
+			
+		Listen on all interfaces but limit connections 
+		to specific source IP address. If any Accept elements 
+		are present, all non-matching hosts are denied:
+			<Bind port="4573">
+				<Accept host="www.mydomain.com" />
+				<Accept host="www.anotherdomain.com" />
+			</Bind>
+		-->
+		<!-- These settings determine the default behaviour of 
+		the OrderlyQExample application.
+		
+		Please see source code for that example for further details. -->
+			<OrderlyQ
+				rateStrategy="Fixed" 
+				rate="4.2"
+				activate="Busy"
+				activateWait="10" 
+				rounding="Up"
+				hangup="None"
+				music="default"
+				extraPrompt="Entry"
+				extraOffer="None"
+				mobilePattern="(.*?)447(.*?)"
+				textAvailable="Mobiles"
+				textPrompt="Entry"
+				textOffer="None"
+				textDelay="0"
+				persistNoCall="720"
+				persistAfterCall="0" >
+				<TextMessage>You are now at the front of the queue. Please call us on 0845 004 5412 for service</TextMessage>
+			</OrderlyQ>
+		</AGIServer>
+	</Services>
+</OrderlyCalls>

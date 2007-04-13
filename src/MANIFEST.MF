@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Created-By: Edgar Medrano
+Built-By: Edgar Medrano
+Package: org.javier
+Specification-Title: Voice Extensible Markup Language (VoiceXML) Version 2.0
+Specification-Vendor: The World Wide Web Consortium (W3C)
+Implementation-Title: JAvascript Voicexml InterpretER
+Implementation-Vendor: Edgar Medrano
+Implementation-Version: 1.0
+Main-Class: org.javier.browser.Javier
+
