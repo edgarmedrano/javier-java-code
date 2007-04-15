@@ -12,65 +12,108 @@
 
 package org.javier.browser;
 
-import java.net.URLEncoder;
-import java.util.Hashtable;
+import java.io.FileNotFoundException;
 import java.util.Vector;
+import java.util.concurrent.TimeUnit;
 
-import javax.script.Bindings;
-import javax.script.Invocable;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-
-import org.javier.util.FastConcatenation;
+import org.javier.browser.Document.State;
 import org.javier.browser.handlers.ConsoleErrorHandler;
 import org.javier.browser.handlers.ConsoleInputHandler;
 import org.javier.browser.handlers.ConsoleLogHandler;
 import org.javier.browser.handlers.ConsoleOutputHandler;
-import org.javier.browser.handlers.ErrorHandler;
 import org.javier.browser.handlers.InputHandler;
-import org.javier.browser.handlers.LogHandler;
 import org.javier.browser.handlers.NetworkHandler;
 import org.javier.browser.handlers.NetworkListener;
-import org.javier.browser.handlers.OutputHandler;
+import org.javier.browser.handlers.StreamLogHandler;
 import org.javier.browser.handlers.XMLHTTPNetworkHandler;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
-@SuppressWarnings("unused")
 public class Javier 
 	implements DocumentListener {
 	static public final int END_CODE_SUCCESS = 0;
 	static public final int END_CODE_ERROR = 1;
 	
-	protected final ScriptEngineManager sem = new ScriptEngineManager();
-	protected ScriptEngine seJavaScript;
-	private final Vector<JavierListener> vecListeners = new Vector<JavierListener>();
+	public static void main(String[] argv) {
+		final Javier javier;
+		String strAppURL = "http://localhost/javier/default.vxml";
+		//String strVoice = "";
+		
+		if(argv.length > 0) {
+			strAppURL = argv[0];
+		}
+		/*
+		if(argv.length > 1) {
+			strVoice = argv[1];
+		}
+		*/
+		javier = new Javier
+			(new ConsoleInputHandler()
+			,new XMLHTTPNetworkHandler());
+		
+		javier.addOutputListener(new ConsoleOutputHandler());
+		javier.addErrorListener(new ConsoleErrorHandler());
+		javier.addLogListener(new ConsoleLogHandler());
+		try {
+			javier.addLogListener(new StreamLogHandler("Javier.log"));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		
+		javier.addJavierListener(new JavierListener() {
+				public void excecutionEnded(int endCode) {
+					System.out.println("Done!");
+				}
+				public void loadStateChanged(int readyState) {
+					String advance = "";
+					
+					for(int i = 1; i < readyState - 1; i++) {
+						advance += "\b\b\b"; 
+					}
+					
+					for(int i = 1; i < readyState; i++) {
+						advance += "|||"; 
+					}
+					
+					System.out.print(advance);
+				}
+				public void urlChanged(String url) {
+					System.out.println("Loading: " + url);
+				}
+			});
+		javier.addErrorListener(new ErrorListener() {
+				public void errorFound(String description) {
+					System.out.println(javier.document.getJs());
+				}
+			});
+		
+		javier.mainLoop(strAppURL);
+	}
+	private final Vector<JavierListener> vecJavierLs= new Vector<JavierListener>();
+	private final Vector<OutputListener> vecOutputLs = new Vector<OutputListener>();
+	private final Vector<ErrorListener> vecErrorLs = new Vector<ErrorListener>();
+	private final Vector<LogListener> vecLogLs = new Vector<LogListener>();
 	private final InputHandler __input__;
-	private final OutputHandler __output__;
-	private final ErrorHandler __error__;
 	private final NetworkHandler __network__;
-	private final LogHandler __log__;
-	private int maxlogLevel = LogHandler.VERBOSE ; // 0 to 4 = none to verbose
+	private int maxlogLevel = LogListener.WARNING ; // 0 to 4 = none to verbose
 	public Document document = new Document();
+	
 	protected boolean autoEval = true;
+	private int endCode;
+	private Document homeDocument;
 	
 	Javier(InputHandler __input__
-			,OutputHandler __output__
-			,ErrorHandler __error__
+			,NetworkHandler __network__) {
+		this(__input__
+				,__network__
+				,"JavaScript");
+	}
+
+	Javier(InputHandler __input__
 			,NetworkHandler __network__
-			,LogHandler __log__
 			,String jsEngineName) {
-		final Javier _this = this;
-		
 		this.__input__ = __input__;
-		this.__output__ = __output__;
-		this.__error__ = __error__;
 		this.__network__ = __network__;
-		this.__log__ = __log__;
 		
-		seJavaScript = sem.getEngineByName(jsEngineName);
 		__network__.addNetworkListener(new NetworkListener() {
 				public void readyStateChanged(int readyState) {
 					fireLoadStateChanged(readyState);
@@ -82,103 +125,118 @@ public class Javier
 			});
 	}
 	
-	Javier(InputHandler __input__
-			,OutputHandler __output__
-			,ErrorHandler __error__
-			,NetworkHandler __network__
-			,LogHandler __log__) {
-		this(__input__
-				,__output__
-				,__error__
-				,__network__
-				,__log__
-				,"JavaScript");
+	public void addErrorListener(ErrorListener l) {
+		vecErrorLs.add(l);
 	}
 
 	public void addJavierListener(JavierListener l) {
-		vecListeners.add(l);
+		vecJavierLs.add(l);
+	}
+
+	public void addLogListener(LogListener l) {
+		vecLogLs.add(l);
+	}
+
+	public void addOutputListener(OutputListener l) {
+		vecOutputLs.add(l);
 	}
 	
-	public void removeJavierListener(JavierListener l) {
-		vecListeners.remove(l);
+	public void addText(String text) {
+		fireOuputAddText(text);
 	}
 	
-	protected void fireLoadStateChanged(int readyState) {
-		for(JavierListener l: vecListeners) {
-			l.loadStateChanged(readyState);
+	public void clearText() {
+		fireOuputClearText();
+	}
+	
+	public void comment(Object source, String message) {
+		log(source,message,LogListener.COMMENT);
+	}
+	
+	public void commentFound(String description) {
+		comment(document,description);
+	}
+	
+	public void end(int endCode) {
+		this.endCode = endCode;
+		fireOuputWaitUntilDone();
+		fireExcecutionEnded(endCode);
+	}
+
+	public void error(Object source, String message) {
+		fireErrorFound(source.getClass().getName() + ": " + message);
+		log(source,message,LogListener.ERROR);
+	}
+	
+	public void errorFound(String description) {
+		error(document,description);
+	}
+	
+	protected void fireErrorFound(String description) {
+		for(ErrorListener l: vecErrorLs) {
+			l.errorFound(description);
 		}
 	}
-	
-	protected void fireErrorLogged(String description) {
-		for(JavierListener l: vecListeners) {
-			l.errorLogged(description);
-		}
-	}
-	
-	protected void fireWarningLogged(String description) {
-		for(JavierListener l: vecListeners) {
-			l.warningLogged(description);
-		}
-	}
-	
-	protected void fireCommentLogged(String description) {
-		for(JavierListener l: vecListeners) {
-			l.commentLogged(description);
-		}
-	}
-	
-	protected void fireVerboseLogged(String description) {
-		for(JavierListener l: vecListeners) {
-			l.verboseLogged(description);
-		}
-	}
-	
-	protected void fireUrlChanged(String url) {
-		for(JavierListener l: vecListeners) {
-			l.urlChanged(url);
-		}
-	}
-	
+
 	protected void fireExcecutionEnded(int endCode) {
-		for(JavierListener l: vecListeners) {
+		for(JavierListener l: vecJavierLs) {
 			l.excecutionEnded(endCode);
 		}
 	}
 	
-	public void log(Object source, String text,int level) {
-		if(level <= maxlogLevel) {
-			__log__.writeln(source.getClass().getName() + ": " + text);
+	protected void fireLoadStateChanged(int readyState) {
+		for(JavierListener l: vecJavierLs) {
+			l.loadStateChanged(readyState);
 		}
 	}
 	
-	
-	public void error(Object source, String message) {
-		log(source,message,LogHandler.ERROR);
-		__error__.writeln(source.getClass().getName() + ": " + message);
-		fireErrorLogged(message);
-	}
-    
-	public void warning(Object source, String message) {
-		log(source,message,LogHandler.WARNING);
-		fireWarningLogged(message);
-	}
-    
-	public void comment(Object source, String message) {
-		log(source,message,LogHandler.COMMENT);
-		fireCommentLogged(message);
+	protected void fireLogReported(String description, int level) {
+		for(LogListener l: vecLogLs) {
+			l.logReported(description, level);
+		}
 	}
 	
-	public void verbose(Object source, String message) {
-		log(source,message,LogHandler.VERBOSE);
-		fireVerboseLogged(message);
+	protected void fireOuputAddText(String text) {
+		for(OutputListener l: vecOutputLs) {
+			l.addText(text);
+		}
+	}
+	
+	protected void fireOuputClearText() {
+		for(OutputListener l: vecOutputLs) {
+			l.clearText();
+		}
+	}
+    
+	protected void fireOuputWaitUntilDone() {
+		for(OutputListener l: vecOutputLs) {
+			l.waitUntilDone();
+		}
+	}
+    
+	protected void fireUrlChanged(String url) {
+		for(JavierListener l: vecJavierLs) {
+			l.urlChanged(url);
+		}
+	}
+	
+	public String getInput(String text) {
+		return getInput(text,"");
 	}
 
-	public boolean load(String docURL) {
-		return load(new Document(docURL));
+	public String getInput(String text,String value) {
+		String result = __input__.getInput(text,value);
+		clearText();
+		return result;
 	}
 	
+	public boolean isAutoEval() {
+		return autoEval;
+	}
+
 	public boolean load(Document docRef) {
 		if(!docRef.getUrl().equals("")) {
+			document.setState(State.LOADING);
 			document = docRef;
 			document.addDocumentListener(this);
 			fireUrlChanged(document.getUrl());
@@ -195,15 +253,56 @@ public class Javier
 		
 		return false;
 	}
+	
+	public boolean load(String docURL) {
+		return load(new Document(docURL));
+	}
 
+	public void log(Object source, String text,int level) {
+		if(level <= maxlogLevel) {
+			fireLogReported(source.getClass().getName() + ": " + text, level);
+		}
+	}
+
+	public int mainLoop() {
+		for(;;) {
+			if(document.getState() == State.CREATED) {
+				load(document);
+			}
+			try {
+				TimeUnit.SECONDS.sleep(10);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			if(document.getUrl().equals("")) {
+				break;
+			}
+			if(document.getState() == State.ERROR) {
+				break;
+			}
+		}
+		return endCode;
+	}
+	
+	public int mainLoop(Document homeDocument) {
+		this.homeDocument = homeDocument;
+		this.document = homeDocument;
+		return mainLoop();
+	}
+	
+	public int mainLoop(String homeURL) {
+		return mainLoop(new Document(homeURL));
+	}
+	
 	private void process(Object result) {
+		document.setState(State.LOADED);
 		if(result != null) {
 			if(result instanceof Node) {
 				Node xml = (Node) result;
 				try {
 					document.setXML(xml);
 					if(autoEval) {
-						run(document);
+						run();
 					}
 				} catch(Exception e) {
 					e.printStackTrace(System.out);
@@ -220,105 +319,58 @@ public class Javier
 		}
 	}
 	
+	public void removeErrorListener(ErrorListener l) {
+		vecErrorLs.remove(l);
+	}
 	
-	protected void run(Document docRef) {
+	public void removeJavierListener(JavierListener l) {
+		vecJavierLs.remove(l);
+	}
+	
+	public void removeLogListener(LogListener l) {
+		vecLogLs.remove(l);
+	}
+
+	public void removeOutputListener(OutputListener l) {
+		vecOutputLs.remove(l);
+	}
+
+	protected void run() {
 		try {
-			document = execute(docRef);
-		} catch(VXMLException e) {
+			document = document.execute(this);
+		} catch(Exception e) {
 			if(e.getMessage().equals("error")
 				|| e.getMessage().equals("exit")
 				|| e.getMessage().equals("telephone.disconnect")) {
 				end(END_CODE_SUCCESS);
 			} else {
-				error(this,"Error: " + e.getMessage());
+				error(this,"Error: " + e.getClass().getName() + " " + e.getMessage());
 				end(END_CODE_ERROR);			
 			}
-		} catch(Exception e) {
-			error(this,"Error: " + e.getClass().getName() + " " + e.getMessage());
-			end(END_CODE_ERROR);			
 		}
-	}
-	
-	private Document execute(Document docRef) throws VXMLException {
-		Object nextDoc = null;
-		try {
-			Bindings newBindings = seJavaScript.createBindings();
-			newBindings.put("__browser__", this);
-			newBindings.put("__document__", Document.class);
-			nextDoc = seJavaScript.eval(docRef.getJs(),newBindings);
-			if(nextDoc instanceof String) {
-				nextDoc = new Document((String) nextDoc);
-			}
-		} catch (ScriptException ex) {
-			ex.printStackTrace();
-		}
-		
-		return (Document) nextDoc;
-	}
-
-	void end(int endCode) {
-		__output__.waitUntilDone();
-		fireExcecutionEnded(endCode);
-	}
-	
-	public String getInput(String text) {
-		String result = __input__.getInput(text);
-		__output__.clearText();
-		return result;
-	}
-	
-	public void addText(String text) {
-		__output__.addText(text);
-	}
-	
-	public void clearText() {
-		__output__.clearText();
-	}
-
-	public void commentFound(String description) {
-		comment(document,description);
-	}
-
-	public void errorFound(String description) {
-		error(document,description);
-	}
-
-	public void verboseFound(String description) {
-		verbose(document,description);
-	}
-
-	public void warningFound(String description) {
-		warning(document,description);
-	}
-
-	public boolean isAutoEval() {
-		return autoEval;
 	}
 
 	public void setAutoEval(boolean autoEval) {
 		this.autoEval = autoEval;
 	}
+
+	public void stateChanged(State state) {
+		//TODO: Wake up thread
+	}
+
+	public void verbose(Object source, String message) {
+		log(source,message,LogListener.VERBOSE);
+	}
 	
-	public static void main(String[] argv) {
-		Javier javier;
-		int exitCode;
-		String strAppURL = "http://localhost/javier/default.vxml";
-		String strVoice = "";
-		
-		if(argv.length > 0) {
-			strAppURL = argv[0];
-		}
-		if(argv.length > 1) {
-			strVoice = argv[1];
-		}
-		
-		javier = new Javier
-			(new ConsoleInputHandler()
-			,new ConsoleOutputHandler(strVoice)
-			,new ConsoleErrorHandler()
-			,new XMLHTTPNetworkHandler() 
-			,new ConsoleLogHandler());
-		
-		javier.load(strAppURL);
+	public void verboseFound(String description) {
+		verbose(document,description);
+	}
+
+	public void warning(Object source, String message) {
+		log(source,message,LogListener.WARNING);
+	}
+	
+	public void warningFound(String description) {
+		warning(document,description);
 	}
 }

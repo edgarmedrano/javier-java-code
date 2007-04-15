@@ -1,0 +1,152 @@
+<script language="JavaScript">
+function aDocument(x) {
+/* <vxml version="2.0" xmlns="http://www.w3.org/2001/vxml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/vxml     http://www.w3.org/TR/voicexml20/vxml.xsd"> */
+var _next = 0;
+var _form = new Array();
+	/* <meta content="John Doe" name="author" /> */
+	/* <meta content="hello-support@hi.example.com" name="maintainer" /> */
+	/* <var expr="'Hello World!'" name="hi" /> */
+	var hi = 'Hello World!';
+	/* <form> */
+	_form[_form.length] = 
+		function() {
+			this.fields = "";
+			function _clear (_namelist) {
+				_namelist = _namelist.split(" ");
+				for(var _i=0; _i < _namelist.length; _i++) {
+				}
+			}
+			function _get(_field) { return eval(_field); }
+			_clear(this.fields);
+			var _nextitem = true;
+			this.count = (!this.count? 0 : this.count) + 1;
+			var _count;
+			while(_nextitem != false) {
+				try {
+					_count = this.count;
+					switch(_nextitem) {
+						case true: 
+						/* <block> */
+							/* <value expr="hi" /> */
+							__expr = hi;
+							__browser__.addText(__expr);
+							/* <goto next="#say_goodbye" /> */
+							return "#say_goodbye";
+						/* </block> */
+							_nextitem = false;
+							break;
+						default:
+							throw("Unknown item '" + _nextitem + "'");
+					}
+				} catch(_error1) {
+					var _throw = false;
+					var _break = true;
+					while(_error1) {
+						try {
+							if(_error1 == "filled"
+								|| _error1 == "cancel") {
+								/*This is the default implementation, do nothing*/
+								_break = false; break;
+							} else if(_error1 == "help"
+								|| _error1 == "noinput"
+								|| _error1 == "nomatch"
+								|| _error1 == "maxspeechtimeout") {
+								_nextitem=true; break;
+							} else {
+								_throw = true; break;
+							}
+						} catch(_error2) {
+							_error1 = _error2;
+						}
+					}
+					if(_throw) { throw(_error1); }
+					if(_break) { break; }
+				}
+			}
+			return "";
+		}
+	/* </form> */
+	/* <form id="say_goodbye"> */
+	_form[_form.length] = _form["say_goodbye"] = 
+		function() {
+			this.fields = "";
+			function _clear (_namelist) {
+				_namelist = _namelist.split(" ");
+				for(var _i=0; _i < _namelist.length; _i++) {
+				}
+			}
+			function _get(_field) { return eval(_field); }
+			_clear(this.fields);
+			var _nextitem = true;
+			this.count = (!this.count? 0 : this.count) + 1;
+			var _count;
+			while(_nextitem != false) {
+				try {
+					_count = this.count;
+					switch(_nextitem) {
+						case true: 
+						/* <block> */
+							/* Goodbye! */
+							__browser__.addText(unescape("Goodbye%21"));
+						/* </block> */
+							_nextitem = false;
+							break;
+						default:
+							throw("Unknown item '" + _nextitem + "'");
+					}
+				} catch(_error1) {
+					var _throw = false;
+					var _break = true;
+					while(_error1) {
+						try {
+							if(_error1 == "filled"
+								|| _error1 == "cancel") {
+								/*This is the default implementation, do nothing*/
+								_break = false; break;
+							} else if(_error1 == "help"
+								|| _error1 == "noinput"
+								|| _error1 == "nomatch"
+								|| _error1 == "maxspeechtimeout") {
+								_nextitem=true; break;
+							} else {
+								_throw = true; break;
+							}
+						} catch(_error2) {
+							_error1 = _error2;
+						}
+					}
+					if(_throw) { throw(_error1); }
+					if(_break) { break; }
+				}
+			}
+			return "";
+		}
+	/* </form> */
+_form[_form.length] = _form._int_exit = function() { return ""; }
+	while(_form[_next] && "" + _next != "") { 
+		var _newnext = _form[_next]();
+		if(_newnext == "") {
+			for(_newnext = 0; _newnext < _form.length; _newnext++) {
+				if(_form[_next] == _form[_newnext]) {
+					_newnext = _newnext + 1;
+					break;
+				}
+			}
+			if(_newnext == _form.length) {
+				_newnext = "";
+			}
+		}
+		_next = _newnext;
+		if(typeof(_next) == "string") {
+			if(_next.indexOf("#") >= 0) {
+				_newnext = _next.split("#");
+				if(_newnext[0] == "" || _newnext[0] == this.url) {
+					_next = _newnext[1];
+				}
+			} 
+		}
+	}
+	return _next;
+/* </vxml> */
+}
+</script>

@@ -15,12 +15,22 @@ import java.net.URLEncoder;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import javax.script.Bindings;
+import javax.script.Invocable;
+import javax.script.ScriptContext;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+
 import org.javier.util.FastConcatenation;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 public class Document {
+	static public enum State {
+		CREATED, LOADING, LOADED, PARSING, PARSED, EXECUTING, EXECUTED, ERROR
+	}
 	static protected enum Tag {
 		_Text, _Comment, Assign, Audio, Block, Catch, Choice,	Clear, 
 		Disconnect, Else, ElseIf, Enumerate, Error, Exit, Field, Filled, 
@@ -29,6 +39,7 @@ public class Document {
 		Reprompt, Return, Script, Subdialog, Submit, Throw, Transfer, Value,
 		Var, Vxml, Xml
 	}
+	static protected final ScriptEngineManager sem = new ScriptEngineManager();
 	static protected final Hashtable<String, Tag> htTagEnum 
 		= new Hashtable<String, Tag>(60);
 	static {
@@ -78,8 +89,15 @@ public class Document {
 		htTagEnum.put("vxml", Tag.Vxml);
 	}	
 
+	protected static String encodeURIComponent(String str) {
+		try {
+			str = URLEncoder.encode(str, "UTF-8");
+		} catch(Exception e) { }
+		
+		return str.replaceAll("\\+", "%20").replaceAll("%2B", "+");
+    }
+	volatile private State state;
 	private String url;
-	private String text;
 	private Node xml;
 	private String js;
 	private String method;
@@ -89,10 +107,18 @@ public class Document {
 	private int maxstale;
 	private final Vector<DocumentListener> vecListeners = new Vector<DocumentListener>();
 
+	protected ScriptEngine seJavaScript;
+	
+	public Document() {
+		this("");
+	}
+
 	public Document(String url) {
 		this(url,"GET","",0,0,0);
+		state = State.CREATED;
+		seJavaScript = sem.getEngineByName("JavaScript");
 	}
-	
+		
 	public Document(String url
 			, String method
 			, String enctype
@@ -108,98 +134,126 @@ public class Document {
 		this.timeout = timeout;
 		this.xml = null;
 	}
-
-	public Document() {
-		this("");
-	}
-		
+	
 	public void addDocumentListener(DocumentListener l) {
 		vecListeners.add(l);
-	}
-	
-	public void removeDocumentListener(DocumentListener l) {
-		vecListeners.remove(l);
 	}	
 	
-	protected void fireErrorFound(String description) {
-		for(DocumentListener l: vecListeners) {
-			l.errorFound(description);
-		}
-	}
-	
-	protected void fireWarningFound(String description) {
-		for(DocumentListener l: vecListeners) {
-			l.warningFound(description);
-		}
-	}
-	
-	protected void fireCommentFound(String description) {
-		for(DocumentListener l: vecListeners) {
-			l.commentFound(description);
-		}
-	}
-	
-	protected void fireVerboseFound(String description) {
-		for(DocumentListener l: vecListeners) {
-			l.verboseFound(description);
-		}
-	}	
-	
-    protected static String encodeURIComponent(String str) {
-		try {
-			str = URLEncoder.encode(str, "UTF-8");
-		} catch(Exception e) { }
-		
-		return str.replaceAll("\\+", "%20").replaceAll("%2B", "+");
-    }
-	
-    protected String escape(String str) {
-		return encodeURIComponent(str);
-	}
-	
-    protected FastConcatenation startTag(Node node) {
-		int n = node.getAttributes().getLength();
-		FastConcatenation stbResult = new FastConcatenation(16 * (4 + 5 * n));
-		
-		stbResult.push("/* <", node.getNodeName());
-		
-		if(n > 0) {
-			for(int j = 0; j < n; j++) {
-				NamedNodeMap nnm = node.getAttributes();
-				stbResult.push(" ", nnm.item(j).getNodeName()
-						, "=\"", nnm.item(j).getNodeValue(),"\"");
-			}
-		}
-		
-		if(!node.hasChildNodes()) {
-			stbResult.push(" /");
-		}
-		
-		stbResult.push("> */");
-		
-		return stbResult;
-	}
-
-    protected String endTag(Node node) {
+	protected String endTag(Node node) {
 		if(node.hasChildNodes()) {
 			return "/* </" + node.getNodeName() + "> */";
 		}
 		
 		return "";
 	}
+	
+	protected String escape(String str) {
+		return encodeURIComponent(str);
+	}
+	
+	public Document execute(Javier __browser__) 
+		throws ScriptException
+			, NoSuchMethodException {
+		Object nextDoc = null;
+		Invocable invocableEngine = (Invocable)seJavaScript;
+		String jsFunction 
+			= "function aDocument(x) {" 
+				+ this.getJs() 
+				+ "\n}";
+		Bindings newBindings = seJavaScript.createBindings();
+		seJavaScript.setBindings(newBindings, ScriptContext.ENGINE_SCOPE );
+		seJavaScript.put("__browser__", __browser__);
+		seJavaScript.put("__document__", Document.class);
+		seJavaScript.eval(jsFunction);
+		try {
+			setState(State.EXECUTING);
+			nextDoc = invocableEngine.invokeFunction("aDocument","x");
+			setState(State.EXECUTED);
+		} catch(ScriptException e) {
+			e.printStackTrace();
+		}
+		if(nextDoc instanceof String) {
+			nextDoc = new Document((String) nextDoc);
+		}
+		
+		return (Document) nextDoc;		
+	}
+	
+	protected void fireCommentFound(String description) {
+		for(DocumentListener l: vecListeners) {
+			l.commentFound(description);
+		}
+	}	
 
-	/**
+	protected void fireErrorFound(String description) {
+		for(DocumentListener l: vecListeners) {
+			l.errorFound(description);
+		}
+	}
+	
+	private void fireStateChanged(State state) {
+		for(DocumentListener l: vecListeners) {
+			l.stateChanged(state);
+		}
+	}
+
+	protected void fireVerboseFound(String description) {
+		for(DocumentListener l: vecListeners) {
+			l.verboseFound(description);
+		}
+	}
+		
+    protected void fireWarningFound(String description) {
+		for(DocumentListener l: vecListeners) {
+			l.warningFound(description);
+		}
+	}
+	
+    public String getEnctype() {
+		return enctype;
+	}
+	
+    /**
 	 * @return the js
 	 */
 	public String getJs() {
+		if(js == "") {
+			setState(State.PARSING);
+			js = parse().toString();
+			setState(State.PARSED);
+		}
 		return js;
+	}
+
+    public int getMaxage() {
+		return maxage;
+	}
+
+	public int getMaxstale() {
+		return maxstale;
+	}
+
+	public String getMethod() {
+		return method;
+	}
+
+	public State getState() {
+		return state;
 	}
 
 	/**
 	 * @return the text
 	 */
 	public String getText() {
-		return text;
+		if(xml == null) {
+			return "";
+		}
+		
+		return xml.toString();
+	}
+
+	public int getTimeout() {
+		return timeout;
 	}
 
 	/**
@@ -216,40 +270,15 @@ public class Document {
 		return xml;
 	}
 
-	public String getEnctype() {
-		return enctype;
-	}
-
-	public int getMaxage() {
-		return maxage;
-	}
-
-	public int getMaxstale() {
-		return maxstale;
-	}
-
-	public String getMethod() {
-		return method;
-	}
-
-	public int getTimeout() {
-		return timeout;
-	}
-	
-	public void setXML(Node xml) {
-		this.xml = xml;
-		this.js = parse().toString();
-	}
-	
 	private FastConcatenation parse() {
     	return parse(xml);
-    }	
-	
-    private FastConcatenation parse(Node node) {
+    }
+
+	private FastConcatenation parse(Node node) {
     	return parse(node, 0);
-    }	
-    
-    private FastConcatenation parse(Node node,int level) {
+    }
+	
+	private FastConcatenation parse(Node node,int level) {
 		final NodeList childs = node.getChildNodes();
 		final int n = childs.getLength();
 		final FastConcatenation fc = new FastConcatenation(16 * (16 * n));
@@ -361,28 +390,28 @@ public class Document {
 					fc.push("return \"#_int_exit\";");
 					break;
 				case Field:
-					fc.push(snst, "case \"", childA.getNamedItem("name"), "\":"); 
+					fc.push(snst, "case \"", childA.getNamedItem("name").getNodeValue(), "\":"); 
 					fc.push(snst, "\ttry {");
 					fc.push(snst, "\t\tthis."
-							, childA.getNamedItem("name")
+							, childA.getNamedItem("name").getNodeValue()
 							, "_count = (!this."
-							, childA.getNamedItem("name")
+							, childA.getNamedItem("name").getNodeValue()
 							, "_count? 0 : this."
-							, childA.getNamedItem("name")
+							, childA.getNamedItem("name").getNodeValue()
 							, "_count) + 1;");
 					fc.push(snst, "\t\t_count = this."
-							, childA.getNamedItem("name")
+							, childA.getNamedItem("name").getNodeValue()
 							, "_count;"
 							, this.parse(child,level + 2));
 					fc.push(snst, "\t\tfilled = "
 							, "__browser__.getInput(\""
-							, childA.getNamedItem("name")
+							, childA.getNamedItem("name").getNodeValue()
 							, "\","
-							, childA.getNamedItem("name")
+							, childA.getNamedItem("name").getNodeValue()
 							, ");");
 					fc.push(snst, "\t\tif(filled) {");
 					fc.push(snst, "\t\t\t"
-							, childA.getNamedItem("name")
+							, childA.getNamedItem("name").getNodeValue()
 							, " = filled;");
 					fc.push(snst, "\t\t\tthrow(\"filled\");");
 					fc.push(snst, "\t\t} else {");
@@ -442,7 +471,7 @@ public class Document {
 					fc.push(snst, "\t\t\t\t\t|| _error1 == \"nomatch\"");
 					fc.push(snst, "\t\t\t\t\t|| _error1 == \"maxspeechtimeout\") {");
 					fc.push(snst, "\t\t\t\t\t_nextitem=\""
-							, childA.getNamedItem("name")
+							, childA.getNamedItem("name").getNodeValue()
 							, "\"; break;");
 					fc.push(snst, "\t\t\t\t} else {");
 					fc.push(snst, "\t\t\t\t\t_throw = true; break;");
@@ -451,7 +480,17 @@ public class Document {
 					fc.push(snst, "\t\t\t\t_error1 = _error2;");
 					fc.push(snst, "\t\t\t}");
 					fc.push(snst, "\t\t}");
-					fc.push(snst, "\t\tif(_throw) { throw(_error1); }");
+					fc.push(snst, "\t\tif(_throw) {");
+					fc.push(snst, "\t\t\tvar _error1_m = [];");
+					fc.push(snst, "\t\t\tif(typeof(_error1) == \"string\") {");
+					fc.push(snst, "\t\t\t\t_error1_m[0] = _error1;");
+					fc.push(snst, "\t\t\t} else {");
+					fc.push(snst, "\t\t\t\tfor(var i in _error1) {");
+					fc.push(snst, "\t\t\t\t\t_error1_m.push(i + \":\" + _error1[i]);");
+					fc.push(snst, "\t\t\t\t}");
+					fc.push(snst, "\t\t\t}");
+					fc.push(snst, "\t\t\tthrow(\"{\" + _error1_m.join(\",\") + \"}\");");
+					fc.push(snst, "\t\t}");
 					fc.push(snst, "\t\tif(_break) { break; }");
 					fc.push(snst, "\t}");
 					break;
@@ -460,7 +499,7 @@ public class Document {
 					fc.push(snst, "_form[_form.length] = ");
 					if(childA.getNamedItem("id") != null) {
 						fc.push("_form[\""
-								, childA.getNamedItem("id")
+								, childA.getNamedItem("id").getNodeValue()
 								, "\"] = ");
 					}
 					fc.push(snst, "\tfunction() {");
@@ -470,13 +509,15 @@ public class Document {
 						childCA = childC.getAttributes();
 						if(childC.getNodeName() == "field") {
 							fc.push(snst, "\t\tvar ");
-							fc.push(childCA.getNamedItem("name"));
+							fc.push(childCA.getNamedItem("name").getNodeValue(), " = ");
 							if(childCA.getNamedItem("expr") != null) {
-								fc.push(" = ");
 								fc.push(childCA.getNamedItem("expr").getNodeValue().replaceAll("\n",snst + "\t"));
+							} else {
+								fc.push("\"\"");
 							}
 							fc.push(";");
-							fields.append(" "); fields.append(childCA.getNamedItem("name"));
+							fields.append(" "); 
+							fields.append(childCA.getNamedItem("name").getNodeValue());
 						}
 					}
 					fc.push(snst, "\t\tthis.fields = \""
@@ -589,7 +630,7 @@ public class Document {
 							}	
 							if(childCA.getNamedItem("count") != null) {
 								fc.push(snst, " && this.count == ");
-								fc.push(childCA.getNamedItem("count"));
+								fc.push(childCA.getNamedItem("count").getNodeValue());
 							}	
 							fc.push(") {");
 							fc.push(this.parse(childC,level + 7));
@@ -616,7 +657,18 @@ public class Document {
 					fc.push(snst, "\t\t\t\t\t\t_error1 = _error2;");
 					fc.push(snst, "\t\t\t\t\t}");
 					fc.push(snst, "\t\t\t\t}");
-					fc.push(snst, "\t\t\t\tif(_throw) { throw(_error1); }");
+
+					fc.push(snst, "\t\t\t\tif(_throw) {");
+					fc.push(snst, "\t\t\t\t\tvar _error1_m = [];");
+					fc.push(snst, "\t\t\t\t\tif(typeof(_error1) == \"string\") {");
+					fc.push(snst, "\t\t\t\t\t\t_error1_m[0] = _error1;");
+					fc.push(snst, "\t\t\t\t\t} else {");
+					fc.push(snst, "\t\t\t\t\t\tfor(var i in _error1) {");
+					fc.push(snst, "\t\t\t\t\t\t\t_error1_m.push(i + \":\" + _error1[i]);");
+					fc.push(snst, "\t\t\t\t\t\t}");
+					fc.push(snst, "\t\t\t\t\t}");
+					fc.push(snst, "\t\t\t\t\tthrow(\"{\" + _error1_m.join(\",\") + \"}\");");
+					fc.push(snst, "\t\t\t\t}");
 					fc.push(snst, "\t\t\t\tif(_break) { break; }");
 					fc.push(snst, "\t\t\t}");
 					fc.push(snst, "\t\t}");
@@ -648,7 +700,7 @@ public class Document {
 						}
 					} else if(childA.getNamedItem("_nextitem") != null) {
 						fc.push(snst, "_nextitem = \""
-								, childA.getNamedItem("_nextitem")
+								, childA.getNamedItem("_nextitem").getNodeValue()
 								, "\"; break;");
 					} else if(childA.getNamedItem("expritem") != null) {
 						fc.push(snst, "_nextitem = "
@@ -673,7 +725,7 @@ public class Document {
 				case Meta:
 					/*
 					result.push(snst, "this."
-						, childA.getNamedItem("name")
+						, childA.getNamedItem("name").getNodeValue()
 						, " = \""
 						, childA.getNamedItem("value").getNodeValue().replaceAll("\n",snst + "\t")
 						, "\";");
@@ -690,7 +742,7 @@ public class Document {
 					}	
 					if(childA.getNamedItem("count") != null) {
 						fc.push(snst, "if(_count == "
-								, childA.getNamedItem("count")
+								, childA.getNamedItem("count").getNodeValue()
 								, ") {");
 					}
 					fc.push(this.parse(child, level + 1));
@@ -704,7 +756,7 @@ public class Document {
 				case Property:
 					/*
 					result.push(snst, "setProperty(\""
-						, childA.getNamedItem("name")
+						, childA.getNamedItem("name").getNodeValue()
 						, "\",\""
 						, childA.getNamedItem("value").getNodeValue().replaceAll("\n",snst + "\t")
 						, "\");");
@@ -729,7 +781,7 @@ public class Document {
 						fc.push(",__expr");
 					} else if (childA.getNamedItem("next") != null) {
 						fc.push(",\""
-								, childA.getNamedItem("next")
+								, childA.getNamedItem("next").getNodeValue()
 								, "\"");
 					} else {
 						fc.push(",\"\"");
@@ -737,7 +789,7 @@ public class Document {
 					
 				    if(childA.getNamedItem("namelist") != null) { 
 						fc.push(",\""
-								, childA.getNamedItem("namelist")
+								, childA.getNamedItem("namelist").getNodeValue()
 								, "\"");
 					} else {
 						fc.push(",this.fields");
@@ -746,7 +798,7 @@ public class Document {
 					/*
 				    if(childA.getNamedItem("method") != null) { 
 						result.push(",\""
-								, childA.getNamedItem("method")
+								, childA.getNamedItem("method").getNodeValue()
 								, "\"");
 					} else {
 						result.push(",\"\"");
@@ -759,7 +811,7 @@ public class Document {
 					/*
 				    if(childA.getNamedItem("enctype") != null) { 
 						result.push(",\""
-									, childA.getNamedItem("enctype")
+									, childA.getNamedItem("enctype").getNodeValue()
 									, "\"");
 					} else {
 						result.push(",\"\"");
@@ -773,7 +825,7 @@ public class Document {
 					break;
 				case Throw:
 					fc.push(snst, "throw(\""
-							, childA.getNamedItem("event")
+							, childA.getNamedItem("event").getNodeValue()
 							, "\");");
 					break;
 				case Value:
@@ -805,6 +857,18 @@ public class Document {
 				case Vxml:
 					fc.push(snst, "var _next = 0;");
 					fc.push(snst, "var _form = new Array();");
+					fc.push(snst, "function getQuery(_get, url, namelist) {");
+					fc.push(snst, "\tvar separator = url.indexOf(\"?\") >= 0 ? \"&\" : \"?\";");
+					fc.push(snst, "\turl = url.split(\"#\");");
+					fc.push(snst, "\tnamelist = namelist.split(\" \");");
+					fc.push(snst, "\tfor(var i=0; i < namelist.length; i++) {");
+					fc.push(snst, "\t\turl[0] += separator + namelist[i] + \"=\" + _get(namelist[i]);");
+					fc.push(snst, "\t\tif(separator == \"?\") {");
+					fc.push(snst, "\t\t\tseparator = \"&\";");
+					fc.push(snst, "\t\t}");
+					fc.push(snst, "\t}");
+					fc.push(snst, "\treturn url.join(\"#\");");
+					fc.push(snst, "}");
 					fc.push(this.parse(child, level + 1));
 					fc.push(snst, "_form[_form.length] = _form._int_exit = function() { return \"\"; }");
 					fc.push(snst, "\twhile(_form[_next] && \"\" + _next != \"\") { ");
@@ -844,5 +908,42 @@ public class Document {
 		}
 		
 		return fc; 
+	}
+	
+	public void removeDocumentListener(DocumentListener l) {
+		vecListeners.remove(l);
+	}
+	
+	public void setState(State state) {
+		this.state = state;
+		fireStateChanged(state);
+	}	
+	
+    public void setXML(Node xml) {
+		this.xml = xml;
+		this.js = "";
+	}	
+    
+    protected FastConcatenation startTag(Node node) {
+		int n = node.getAttributes().getLength();
+		FastConcatenation stbResult = new FastConcatenation(16 * (4 + 5 * n));
+		
+		stbResult.push("/* <", node.getNodeName());
+		
+		if(n > 0) {
+			for(int j = 0; j < n; j++) {
+				NamedNodeMap nnm = node.getAttributes();
+				stbResult.push(" ", nnm.item(j).getNodeName()
+						, "=\"", nnm.item(j).getNodeValue(),"\"");
+			}
+		}
+		
+		if(!node.hasChildNodes()) {
+			stbResult.push(" /");
+		}
+		
+		stbResult.push("> */");
+		
+		return stbResult;
 	}
 }

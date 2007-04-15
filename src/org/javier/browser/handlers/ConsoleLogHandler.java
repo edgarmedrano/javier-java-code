@@ -3,7 +3,9 @@ package org.javier.browser.handlers;
 import java.io.Console;
 import java.io.PrintWriter;
 
-public class ConsoleLogHandler implements LogHandler {
+import org.javier.browser.LogListener;
+
+public class ConsoleLogHandler implements LogListener {
 	PrintWriter pw;
 	protected Console console = System.console();
 
@@ -15,10 +17,9 @@ public class ConsoleLogHandler implements LogHandler {
 		} else {
 			pw = new PrintWriter(System.out);
 		}
-		
 	}
-	
-	public void writeln(String text) {
-		pw.println(text);
+
+	public void logReported(String description, int level) {
+		pw.println(description);
 	}
 }

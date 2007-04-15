@@ -3,11 +3,10 @@ package org.javier.browser.handlers;
 import java.io.Console;
 import java.io.PrintWriter;
 
-import org.javier.browser.handlers.ErrorHandler;
+import org.javier.browser.ErrorListener;
 
-public class ConsoleErrorHandler implements ErrorHandler {
-	PrintWriter pw;
-	protected Console console = System.console();
+public class ConsoleErrorHandler implements ErrorListener {
+	protected PrintWriter pw;
 
 	public ConsoleErrorHandler() {
 		Console console = System.console();
@@ -20,7 +19,7 @@ public class ConsoleErrorHandler implements ErrorHandler {
 		
 	}
 	
-	public void writeln(String text) {
-		pw.println(text);
+	public void errorFound(String description) {
+		pw.println(description);
 	}
 }
