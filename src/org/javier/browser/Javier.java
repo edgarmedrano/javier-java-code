@@ -24,6 +24,7 @@ import org.javier.browser.handlers.ConsoleOutputHandler;
 import org.javier.browser.handlers.InputHandler;
 import org.javier.browser.handlers.NetworkHandler;
 import org.javier.browser.handlers.NetworkListener;
+import org.javier.browser.handlers.SAPIOutputHandler;
 import org.javier.browser.handlers.StreamLogHandler;
 import org.javier.browser.handlers.XMLHTTPNetworkHandler;
 import org.w3c.dom.Node;
@@ -36,21 +37,22 @@ public class Javier
 	public static void main(String[] argv) {
 		final Javier javier;
 		String strAppURL = "http://localhost/javier/default.vxml";
-		//String strVoice = "";
+		String strVoice = "";
 		
 		if(argv.length > 0) {
 			strAppURL = argv[0];
 		}
-		/*
+		
 		if(argv.length > 1) {
 			strVoice = argv[1];
 		}
-		*/
+		
 		javier = new Javier
 			(new ConsoleInputHandler()
 			,new XMLHTTPNetworkHandler());
 		
 		javier.addOutputListener(new ConsoleOutputHandler());
+		javier.addOutputListener(new SAPIOutputHandler(strVoice));
 		javier.addErrorListener(new ConsoleErrorHandler());
 		javier.addLogListener(new ConsoleLogHandler());
 		try {
