@@ -1,10 +1,10 @@
 /*
  * Created on 06/12/2005
  *
- * File OleProperty.java
+ * File OleInterface.java
  * author: Maikon
  */
-package annotations;
+package org.javier.jacob;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -12,8 +12,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface OleProperty {
+@Target(ElementType.TYPE)
+public @interface OleInterface {
 	public String name() default "";
-	public Class<?> returnClazz() default Object.class;
+    public Class<?> eventHandler() default Object.class;
 }

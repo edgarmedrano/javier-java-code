@@ -1,10 +1,10 @@
 package org.javier.jacob.SAPI;
 
 import org.javier.jacob.Dispatchable;
+import org.javier.jacob.OleInterface;
+import org.javier.jacob.OleMethod;
+import org.javier.jacob.OleProperty;
 
-import annotations.OleInterface;
-import annotations.OleMethod;
-import annotations.OleProperty;
 
 @OleInterface(name="Sapi.SpVoice")
 public interface SpVoice extends Dispatchable {

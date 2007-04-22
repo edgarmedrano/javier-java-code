@@ -1,15 +1,15 @@
 package org.javier.jacob.SAPI;
 
-import static proxies.OleAutomationFactory.getActiveXComponet;
-import static org.javier.jacob.SAPI.SpeechStreamFileMode.*; 
-import static org.javier.jacob.SAPI.SpeechAudioFormatType.*; 
+import static org.javier.jacob.OleAutomation.createActiveXObject;
+import static org.javier.jacob.SAPI.SpeechAudioFormatType.*;
+import static org.javier.jacob.SAPI.SpeechStreamFileMode.*;
 import static org.javier.jacob.SAPI.SpeechVoiceSpeakFlags.*;
 
 public class Test {
 
 	public static void main(String[] args) {
-		SpVoice ttsHandler = (SpVoice) getActiveXComponet(SpVoice.class);
-		SpFileStream spfs = (SpFileStream) getActiveXComponet(SpFileStream.class);
+		SpVoice ttsHandler = (SpVoice) createActiveXObject(SpVoice.class);
+		SpFileStream spfs = (SpFileStream) createActiveXObject(SpFileStream.class);
 		
 		ISpeechObjectTokens TTSVoices = ttsHandler.GetVoices();
 		

@@ -87,6 +87,7 @@ public class Document {
 		htTagEnum.put("value", Tag.Value);
 		htTagEnum.put("var", Tag.Var);
 		htTagEnum.put("vxml", Tag.Vxml);
+		htTagEnum.put("xml", Tag.Xml);
 	}	
 
 	protected static String encodeURIComponent(String str) {
@@ -426,15 +427,15 @@ public class Document {
 					for(int j=0; j < childNL; j++) {
 						childC = childN.item(j);
 						childCA = childC.getAttributes();
-						if(childC.getNodeName() == "catch" 
-							|| childC.getNodeName() == "filled" 
-							|| childC.getNodeName() == "error" 
-							|| childC.getNodeName() == "noinput" 
-							|| childC.getNodeName() == "nomatch" 
-							|| childC.getNodeName() == "help" ) {
+						if(childC.getNodeName().equals("catch") 
+							|| childC.getNodeName().equals("filled") 
+							|| childC.getNodeName().equals("error") 
+							|| childC.getNodeName().equals("noinput") 
+							|| childC.getNodeName().equals("nomatch") 
+							|| childC.getNodeName().equals("help")) {
 							String eventName = childC.getNodeName();
 							
-							if(eventName == "catch") {
+							if(eventName.equals("catch")) {
 								eventName = childCA.getNamedItem("event").getNodeValue();
 							}
 						   
@@ -507,7 +508,7 @@ public class Document {
 					for(int j = 0; j < childNL; j++) {
 						childC = childN.item(j);
 						childCA = childC.getAttributes();
-						if(childC.getNodeName() == "field") {
+						if(childC.getNodeName().equals("field")) {
 							fc.push(snst, "\t\tvar ");
 							fc.push(childCA.getNamedItem("name").getNodeValue(), " = ");
 							if(childCA.getNamedItem("expr") != null) {
@@ -529,7 +530,7 @@ public class Document {
 					for(int j=0; j < childNL; j++) {
 						childC = childN.item(j);
 						childCA = childC.getAttributes();
-						if(childC.getNodeName() == "field") {
+						if(childC.getNodeName().equals("field")) {
 							fc.push(snst, "\t\t\t\tif(_namelist[_i] == \""
 									, childCA.getNamedItem("name").getNodeValue()
 									, "\") "
@@ -565,7 +566,7 @@ public class Document {
 						for(int j = 0; j < childNL; j++) {
 							childC = childN.item(j);
 							childCA = childC.getAttributes();
-							if(childC.getNodeName() == "choice") {
+							if(childC.getNodeName().equals("choice")) {
 								fc.push(snst, "\t\t\t\t\t\t\t\tcase ");
 								if(childCA.getNamedItem("dtmf") != null) {
 									fc.push("\"");
@@ -606,12 +607,12 @@ public class Document {
 					for(int j=0; j < childNL; j++) {
 						childC = childN.item(j);
 						childCA = childC.getAttributes();
-						if(childC.getNodeName() == "catch" 
-							|| childC.getNodeName() == "filled" 
-							|| childC.getNodeName() == "error" 
-							|| childC.getNodeName() == "noinput" 
-							|| childC.getNodeName() == "nomatch" 
-							|| childC.getNodeName() == "help" ) {
+						if(childC.getNodeName().equals("catch") 
+							|| childC.getNodeName().equals("filled") 
+							|| childC.getNodeName().equals("error") 
+							|| childC.getNodeName().equals("noinput") 
+							|| childC.getNodeName().equals("nomatch") 
+							|| childC.getNodeName().equals("help")) {
 							String eventName = childC.getNodeName();
 							
 							if(eventName.equals("catch")) {

@@ -2,11 +2,9 @@ package org.javier.browser.handlers;
 
 import java.util.Vector;
 
-import org.w3c.dom.Node;
+import org.javier.browser.Document;
 
 public abstract class AbstractNetworkHandler implements NetworkHandler {
-	protected String text = "";
-	protected Node xml = null;
 	
 	private final Vector<NetworkListener> vecNetworkListeners 
 	  = new  Vector<NetworkListener>();
@@ -36,18 +34,12 @@ public abstract class AbstractNetworkHandler implements NetworkHandler {
 			l.requestCompleted(result);
 		}
 	}
-	
-	/**
-	 * @see org.javier.browser.handlers.NetworkHandler#getText()
-	 */
-	public String getText() {
-		return text;
+		
+	public boolean loadXML(Document docRef) {
+		return load(DocType.Xml,docRef);
 	}
-	
-	/**
-	 * @see org.javier.browser.handlers.NetworkHandler#getXML()
-	 */
-	public Node getXML() {
-		return xml;
-	}
+
+	public boolean loadText(Document docRef) {
+		return load(DocType.Text,docRef);
+	}	
 }

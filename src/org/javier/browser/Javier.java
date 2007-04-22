@@ -2,7 +2,7 @@
  * File:        Javier.java
  * Description: JAvascript Voicexml InterpretER
  *              Java version
- * Author:      Edgar Medrano PÃ©rez 
+ * Author:      Edgar Medrano Pérez 
  *              edgarmedrano at gmail dot com
  * Created:     2007.04.12
  * Company:     JAVIER project
@@ -22,12 +22,14 @@ import org.javier.browser.handlers.ConsoleInputHandler;
 import org.javier.browser.handlers.ConsoleLogHandler;
 import org.javier.browser.handlers.ConsoleOutputHandler;
 import org.javier.browser.handlers.InputHandler;
+import org.javier.browser.handlers.MSXMLHTTPNetworkHandler;
 import org.javier.browser.handlers.NetworkHandler;
 import org.javier.browser.handlers.NetworkListener;
 import org.javier.browser.handlers.SAPIOutputHandler;
 import org.javier.browser.handlers.StreamLogHandler;
 import org.javier.browser.handlers.XMLHTTPNetworkHandler;
 import org.w3c.dom.Node;
+
 
 public class Javier 
 	implements DocumentListener {
@@ -49,7 +51,7 @@ public class Javier
 		
 		javier = new Javier
 			(new ConsoleInputHandler()
-			,new XMLHTTPNetworkHandler());
+			,new MSXMLHTTPNetworkHandler());
 		
 		javier.addOutputListener(new ConsoleOutputHandler());
 		javier.addOutputListener(new SAPIOutputHandler(strVoice));
@@ -101,7 +103,6 @@ public class Javier
 	
 	protected boolean autoEval = true;
 	private int endCode;
-	private Document homeDocument;
 	
 	Javier(InputHandler __input__
 			,NetworkHandler __network__) {
@@ -160,6 +161,9 @@ public class Javier
 	}
 	
 	public void end(int endCode) {
+		if(endCode != END_CODE_SUCCESS) {
+			document.setState(State.ERROR);
+		}
 		this.endCode = endCode;
 		fireOuputWaitUntilDone();
 		fireExcecutionEnded(endCode);
@@ -250,7 +254,7 @@ public class Javier
 			
 			return false;
 		} else {
-			this.end(0);
+			this.end(END_CODE_SUCCESS);
 		}
 		
 		return false;
@@ -272,7 +276,7 @@ public class Javier
 				load(document);
 			}
 			try {
-				TimeUnit.SECONDS.sleep(10);
+				TimeUnit.MILLISECONDS.sleep(10);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -287,7 +291,6 @@ public class Javier
 	}
 	
 	public int mainLoop(Document homeDocument) {
-		this.homeDocument = homeDocument;
 		this.document = homeDocument;
 		return mainLoop();
 	}
@@ -341,6 +344,7 @@ public class Javier
 		try {
 			document = document.execute(this);
 		} catch(Exception e) {
+			e.printStackTrace();
 			if(e.getMessage().equals("error")
 				|| e.getMessage().equals("exit")
 				|| e.getMessage().equals("telephone.disconnect")) {

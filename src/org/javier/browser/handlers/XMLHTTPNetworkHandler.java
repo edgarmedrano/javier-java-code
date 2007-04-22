@@ -9,6 +9,7 @@ import org.javier.browser.handlers.AbstractNetworkHandler;
 import org.jdesktop.http.Method;
 import org.jdesktop.http.async.XmlHttpRequest;
 import org.jdesktop.http.async.AsyncHttpRequest.ReadyState;
+import org.w3c.dom.Node;
 
 public class XMLHTTPNetworkHandler 
 	extends AbstractNetworkHandler 
@@ -54,6 +55,7 @@ public class XMLHTTPNetworkHandler
 		int maxAge = docRef.getMaxage();
 		int maxStale = docRef.getMaxstale();
 		String[] urlParts = url.split("\\?");
+		
 		dt = docType;
 		
 	    if (url.length() >= 2083) {
@@ -91,12 +93,13 @@ public class XMLHTTPNetworkHandler
 		
 		return true;
 	}
-	
-	public boolean loadXML(Document docRef) {
-		return load(DocType.Xml,docRef);
+
+	public String getText() {
+		return xmlhttp.getResponseText();
 	}
 
-	public boolean loadText(Document docRef) {
-		return load(DocType.Text,docRef);
+	public Node getXML() {
+		// TODO Auto-generated method stub
+		return xmlhttp.getResponseXML();
 	}
 }

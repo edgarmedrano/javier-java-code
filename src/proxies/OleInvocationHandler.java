@@ -8,11 +8,11 @@ import java.lang.reflect.Method;
 import java.util.Date;
 
 import org.javier.jacob.Dispatchable;
+import org.javier.jacob.OleInterface;
+import org.javier.jacob.OleMethod;
+import org.javier.jacob.OleProperty;
 import org.javier.jacob.SAPI.ISpeechObjectTokens;
 
-import annotations.OleInterface;
-import annotations.OleMethod;
-import annotations.OleProperty;
 
 import com.jacob.com.Dispatch;
 import com.jacob.com.DispatchEvents;

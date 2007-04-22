@@ -1,9 +1,10 @@
 package org.javier.browser.handlers;
 
+import static org.javier.jacob.OleAutomation.createActiveXObject;
+
 import static org.javier.jacob.SAPI.SpeechAudioFormatType.*;
 import static org.javier.jacob.SAPI.SpeechStreamFileMode.*;
 import static org.javier.jacob.SAPI.SpeechVoiceSpeakFlags.*;
-import static proxies.OleAutomationFactory.getActiveXComponet;
 
 import org.javier.browser.OutputListener;
 import org.javier.jacob.SAPI.ISpeechObjectTokens;
@@ -14,7 +15,7 @@ public class SAPIOutputHandler implements OutputListener {
 	protected SpVoice spVoice;
 	
 	public SAPIOutputHandler(String voice) {
-		spVoice = (SpVoice) getActiveXComponet(SpVoice.class);
+		spVoice = (SpVoice) createActiveXObject(SpVoice.class);
 		
 		if(voice != null && !voice.trim().equals("")) {
 			ISpeechObjectTokens isot = spVoice.GetVoices();
@@ -52,7 +53,7 @@ public class SAPIOutputHandler implements OutputListener {
 	}
 
 	public void file(String path, String text) {
-		SpFileStream spfs = (SpFileStream) getActiveXComponet(SpFileStream.class);
+		SpFileStream spfs = (SpFileStream) createActiveXObject(SpFileStream.class);
 		
 		spfs.getFormat().setType(SAFT8kHz8BitMono);
 		spfs.Open(path, SSFMCreateForWrite, false);

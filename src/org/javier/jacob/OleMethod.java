@@ -4,7 +4,7 @@
  * File OleMethod.java
  * author: Maikon
  */
-package annotations;
+package org.javier.jacob;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

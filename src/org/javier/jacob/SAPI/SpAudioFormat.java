@@ -1,8 +1,8 @@
 package org.javier.jacob.SAPI;
 
-import annotations.OleInterface;
-import annotations.OleMethod;
-import annotations.OleProperty;
+import org.javier.jacob.OleInterface;
+import org.javier.jacob.OleMethod;
+import org.javier.jacob.OleProperty;
 
 @OleInterface(name="Sapi.SpAudioFormat")
 public interface SpAudioFormat {
