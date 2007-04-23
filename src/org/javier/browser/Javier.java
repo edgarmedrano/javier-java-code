@@ -27,7 +27,6 @@ import org.javier.browser.handlers.NetworkHandler;
 import org.javier.browser.handlers.NetworkListener;
 import org.javier.browser.handlers.SAPIOutputHandler;
 import org.javier.browser.handlers.StreamLogHandler;
-import org.javier.browser.handlers.XMLHTTPNetworkHandler;
 import org.w3c.dom.Node;
 
 
@@ -170,6 +169,7 @@ public class Javier
 	}
 
 	public void error(Object source, String message) {
+		document.setState(State.ERROR);
 		fireErrorFound(source.getClass().getName() + ": " + message);
 		log(source,message,LogListener.ERROR);
 	}

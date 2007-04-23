@@ -23,6 +23,7 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
 import org.javier.util.FastConcatenation;
+import org.javier.util.ScriptDebugger;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -117,7 +118,7 @@ public class Document {
 	public Document(String url) {
 		this(url,"GET","",0,0,0);
 		state = State.CREATED;
-		seJavaScript = sem.getEngineByName("JavaScript");
+		seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"));
 	}
 		
 	public Document(String url

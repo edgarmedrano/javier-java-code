@@ -15,7 +15,6 @@ public class MSXMLHTTPNetworkHandler extends AbstractNetworkHandler implements R
 	private DocType dt;
 	private Node xml;
 	private Thread timer;
-	private int lastReadyState;
 	private int timeout;
 	
 	public MSXMLHTTPNetworkHandler() {
@@ -102,11 +101,12 @@ public class MSXMLHTTPNetworkHandler extends AbstractNetworkHandler implements R
 	}
 
 	public void run() {
-		int readyState = 0; 
+		int readyState = xmlhttp.getReadyState(); 
+		int lastReadyState = readyState;
 		int elapsedTime = 0;
-		lastReadyState = 0;
 		
 		while(readyState != 4) {
+			lastReadyState = readyState;
 			while(readyState == lastReadyState) {
 				if(timeout > 0) {
 					if(elapsedTime >= timeout) {
@@ -118,7 +118,6 @@ public class MSXMLHTTPNetworkHandler extends AbstractNetworkHandler implements R
 				try {
 					TimeUnit.MILLISECONDS.sleep(10);
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				elapsedTime += 10;
