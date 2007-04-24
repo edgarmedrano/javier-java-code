@@ -3,7 +3,9 @@ package org.javier.util;
 import java.awt.BorderLayout;
 import java.awt.Button;
 import java.awt.Container;
+import java.awt.FlowLayout;
 import java.awt.Frame;
+import java.awt.Label;
 import java.awt.TextArea;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
@@ -13,6 +15,8 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.event.WindowStateListener;
 import java.io.Reader;
+import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import javax.script.Bindings;
@@ -34,21 +38,38 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 
 	private boolean step;
 
-	public ScriptDebugger(ScriptEngine se) {
+	private boolean debugOn;
+
+	private int line = 1;
+
+	private Label lblLine;
+
+	private boolean stop;
+
+	private TextArea txtBindings;
+
+	public ScriptDebugger(ScriptEngine se, boolean debug) {
 		this.se = se;
+		this.debugOn = debug;
 
 		frame = new Frame();
+		frame.setLayout(new BorderLayout());
 		txtArea = new TextArea();
 		txtArea.setEditable(false);
 		frame.add(txtArea, BorderLayout.CENTER);
+		txtBindings = new TextArea();
+		txtBindings.setEditable(false);
+		frame.add(txtBindings, BorderLayout.EAST);
 		Container cont = new Container();
+		cont.setLayout(new FlowLayout());
 		frame.add(cont, BorderLayout.SOUTH);
+		lblLine = new Label();
+		cont.add(lblLine);
 		Button btnContinue = new Button("Continue");
 		cont.add(btnContinue);
 		btnContinue.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				bypass = true;
-				step = true;
 			}
 		});
 		Button btnStep = new Button("Step");
@@ -56,6 +77,24 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		btnStep.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					step = true;
+					bypass = false;
+				}
+			});
+		Button btnStop = new Button("Stop");
+		cont.add(btnStop);
+		btnStop.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					stop = true;
+					bypass = false;
+				}
+			});
+		Button btnClose = new Button("Close");
+		cont.add(btnClose);
+		btnClose.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					bypass = true;
+		            frame.setVisible(false);
+		            frame.dispose();
 				}
 			});
 		
@@ -66,34 +105,50 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		        }
 	        });
 	}
-
-	protected void init(String code) {
-		se.put("__DEBUG__", this);
-		bypass = false;
-		txtArea.setText(code);
-		frame.pack();
-		frame.setVisible(true);
+	
+	public ScriptDebugger(ScriptEngine se) {
+		this(se,true);
 	}
 
 	public boolean cb(int line) {
-		String code = txtArea.getText();
-		int start = 0;
-		int end = code.length();
-		int stepLine = 1;
-		while(stepLine < line) {
-			start = code.indexOf("\n", start) + 1;
-			stepLine ++;
-		}
-		if(code.indexOf("\n", start) > 0) {
-			end = code.indexOf("\n", start);
-		}
+		String code;
+		int start;
+		int end;
+		int stepLine;
 		
-		txtArea.setSelectionStart(start);
-		txtArea.setSelectionEnd(end);
-		//txtArea.setCaretPosition(start);
-		step = false;
-		if (!bypass) {
-			while(!step) {
+		if(!bypass) {
+			Bindings bind = getBindings(ScriptContext.ENGINE_SCOPE);
+			Set<Entry<String, Object>> set = bind.entrySet();
+			StringBuffer bufBinds = new StringBuffer();
+			for(Entry e:set) {
+				bufBinds.append(e.getKey());
+				bufBinds.append(':');
+				bufBinds.append(e.getValue());
+				bufBinds.append('\n');
+			}
+			
+			txtBindings.setText(bufBinds.toString());
+			code = txtArea.getText();
+			start = 0;
+			end = code.length();
+			stepLine = 0;
+			
+			while(stepLine < line) {
+				start = code.indexOf("\n", start) + 1;
+				stepLine ++;
+			}
+			if(code.indexOf("\n", start) > 0) {
+				end = code.indexOf("\n", start);
+			}
+	
+			lblLine.setText(String.valueOf(line));
+			txtArea.requestFocus();
+			txtArea.setCaretPosition(start);
+			txtArea.setSelectionStart(start);
+			txtArea.setSelectionEnd(end);
+			step = false;
+			stop = false;
+			while(!bypass && !step && !stop) {
 				try {
 					TimeUnit.MILLISECONDS.sleep(100);
 				} catch (InterruptedException e) {
@@ -102,7 +157,10 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 				}
 			}
 		}
-		return true;
+		if(stop) {
+			return true;
+		}
+		return false;
 	}
 
 	public Bindings createBindings() {
@@ -110,34 +168,34 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	}
 
 	public Object eval(Reader reader) throws ScriptException {
-		init("");
+		init();
 		return se.eval(setupReader(reader));
 	}
 
 	public Object eval(Reader reader, Bindings n) throws ScriptException {
-		init("");
+		init();
 		return se.eval(setupReader(reader), n);
 	}
 
 	public Object eval(Reader reader, ScriptContext context)
 			throws ScriptException {
-		init("");
+		init();
 		return se.eval(setupReader(reader), context);
 	}
 
 	public Object eval(String script) throws ScriptException {
-		init(script);
+		init();
 		return se.eval(setup(script));
 	}
 
 	public Object eval(String script, Bindings n) throws ScriptException {
-		init(script);
+		init();
 		return se.eval(setup(script), n);
 	}
 
 	public Object eval(String script, ScriptContext context)
 			throws ScriptException {
-		init(script);
+		init();
 		return se.eval(setup(script), context);
 	}
 
@@ -165,6 +223,13 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		return ((Invocable) se).getInterface(thiz, clasz);
 	}
 
+	protected void init() {
+		se.put("__DEBUG__", this);
+		bypass = false;
+		frame.pack();
+		frame.setVisible(true);
+	}
+
 	public Object invokeFunction(String name, Object... args)
 			throws ScriptException, NoSuchMethodException {
 		return ((Invocable) se).invokeFunction(name, args);
@@ -175,27 +240,169 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		return ((Invocable) se).invokeMethod(thiz, name, args);
 	}
 
+	public boolean isDebugOn() {
+		return debugOn;
+	}
+
 	public void put(String key, Object value) {
 		se.put(key, value);
+	}
+	
+	public void clear() {
+		line = 1;
+		txtArea.setText("");
 	}
 
 	public void setBindings(Bindings bindings, int scope) {
 		se.setBindings(bindings, scope);
 	}
 
+	public void setBypass(boolean bypass) {
+		this.bypass = bypass;
+	}
+
 	public void setContext(ScriptContext context) {
 		se.setContext(context);
 	}
 
+	public void setDebugOn(boolean debugOn) {
+		this.debugOn = debugOn;
+	}
+
 	protected String setup(String code) {
+		StringBuffer debugCode = new StringBuffer(code);
+		String callbackCode;
+		int parentesis = 0;
+		int sparentesis = 0;
+		boolean quotes = false;
+		boolean squotes = false;
+		boolean escape = false;
+		boolean comment = false;
+		boolean lcomment = false;
+		boolean ternary = false;
+		boolean switchStament = false;
+		
+		
+		txtArea.setText(txtArea.getText() + "\n" + code);
+		if(debugOn) {
+			debugCode = new StringBuffer(code);
+			for(int i = 0; i < debugCode.length(); i++) {
+				if(!escape) {
+					switch(debugCode.charAt(i)) {
+						case '\n': 
+							line++;
+							if(lcomment) {
+								lcomment = false;
+							}
+							break;
+						case '(': 
+							if(!comment && !lcomment 
+								&& !quotes && !squotes) {
+								parentesis++;
+							}
+							break;
+						case ')': 
+							if(!comment && !lcomment 
+								&& !quotes && !squotes) {
+								parentesis--;
+							}
+							break;
+						case '[': 
+							if(!comment && !lcomment 
+								&& !quotes && !squotes) {
+								sparentesis++;
+							}
+							break;
+						case ']': 
+							if(!comment && !lcomment 
+								&& !quotes && !squotes) {
+								sparentesis--;
+							}
+							break;
+						case '\\':
+							if(quotes || squotes) {
+								escape = true;
+							}
+							break;
+						case '\'':
+							if(!comment && !lcomment && !quotes) {
+								squotes = !squotes;
+							}
+							break;
+						case '"':
+							if(!comment && !lcomment 
+								&& !escape && !squotes) {
+								quotes = !quotes;
+							}
+							break;
+						case '/':
+							if(!comment && !lcomment && !quotes && !squotes) {
+								if(i + 1 <= debugCode.length()) {
+									if(debugCode.charAt(i + 1) == '*') {
+										comment = true;
+										i++;
+									} else if(debugCode.charAt(i + 1) == '/') {
+										lcomment = true;
+										i++;
+									}
+								}
+							}
+							break;
+						case '*':
+							if(comment) {
+								if(i + 1 <= debugCode.length()) {
+									if(debugCode.charAt(i + 1) == '/') {
+										comment = false;
+										i++;
+									}
+								}
+							}
+							break;
+						case 's':
+							if(!comment && !lcomment && !quotes && !squotes) {
+								if(debugCode.indexOf("switch", i) == i) {
+									switchStament = true;
+								}
+							}
+							break;
+						case '?':
+							if(!comment && !lcomment && !quotes && !squotes) {
+								ternary = true;
+							}
+							break;
+						case ':':
+							if(!comment && !lcomment && !quotes && !squotes) {
+								if(ternary) {
+									ternary = false;
+									break;
+								} else if(switchStament) {
+									switchStament = false;
+									break;
+								}
+							}
+							// break; // no break here
+						case '{':
+						case ';':
+							if(sparentesis == 0 && parentesis == 0
+								&& !switchStament	
+								&& !comment && !lcomment 
+								&& !quotes && !squotes) {
+								callbackCode = "if(__DEBUG__.cb(" + line + ")) return;";
+								debugCode.replace(i + 1, i + 1, callbackCode);
+								i += callbackCode.length();
+							}
+							break;
+					} 
+				} else {	
+					escape = false;
+				}
+			}
+			code = debugCode.toString();
+		}
 		return code;
 	}
 
 	protected Reader setupReader(Reader reader) {
 		return reader;
-	}
-
-	public void setBypass(boolean bypass) {
-		this.bypass = bypass;
 	}
 }

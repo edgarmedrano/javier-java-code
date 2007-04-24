@@ -13,7 +13,6 @@ import org.w3c.dom.Node;
 public class MSXMLHTTPNetworkHandler extends AbstractNetworkHandler implements Runnable {
 	protected MSXMLHTTP xmlhttp;
 	private DocType dt;
-	private Node xml;
 	private Thread timer;
 	private int timeout;
 	
@@ -48,6 +47,7 @@ public class MSXMLHTTPNetworkHandler extends AbstractNetworkHandler implements R
 		String[] urlParts = url.split("\\?");
 		timeout = docRef.getTimeout();
 		dt = docType;
+		
 		
 	    if (url.length() >= 2083) {
 			method = "POST";
@@ -93,11 +93,13 @@ public class MSXMLHTTPNetworkHandler extends AbstractNetworkHandler implements R
 	}
 
 	public Node getXML() {
-		if(xml == null) {
-			DOMDocument doc = xmlhttp.responseXML();
-			xml = new JavaNode(doc);
+		DOMDocument doc = xmlhttp.responseXML();
+		
+		if(doc == null) {
+			return null;
 		}
-		return xml;
+		
+		return new JavaNode(doc);
 	}
 
 	public void run() {
@@ -125,5 +127,6 @@ public class MSXMLHTTPNetworkHandler extends AbstractNetworkHandler implements R
 			}
 			readyStateChange();
 		}
+		timer = null;
 	}
 }
