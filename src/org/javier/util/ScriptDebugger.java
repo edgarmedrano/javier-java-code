@@ -15,6 +15,9 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.event.WindowStateListener;
 import java.io.Reader;
+import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +28,7 @@ import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 import javax.script.ScriptException;
+import javax.script.SimpleBindings;
 
 public class ScriptDebugger implements ScriptEngine, Invocable {
 
@@ -47,9 +51,113 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	private boolean stop;
 
 	private TextArea txtBindings;
+	
+	/*Thanks to A. Sundararajan's Weblog*/
+	class DebugBindings implements Bindings {
+		private Bindings binds;
+		
+		public DebugBindings(Bindings binds) {
+			this.binds = binds;
+		}
+		
+		public Object put(String name, Object value) {
+			Object res = binds.put(name, value);
+			txtBindings.setText(txtBindings.getText() 
+				+ "\nput(" + name + "," + value + ") " + res);
+			return res;
+		}
+
+		public Object get(Object key) {
+			Object res = binds.get(key);
+			if(!key.toString().equals("__DEBUG__")) {
+				if(key.toString().equals("filled")) {
+					String str = "";
+					for(Method m:res.getClass().getMethods()) {
+						str += "\n" + m.toString();
+					}
+					txtBindings.setText(txtBindings.getText() 
+							+ "\n" + str);					
+				}
+			}
+			return res;
+		}
+
+		public boolean containsKey(Object key) {
+			boolean res = binds.containsKey(key);
+			txtBindings.setText(txtBindings.getText() 
+	    		+ "\ncontainsKey(" + key + ") " + res);
+			return res;
+		}
+
+		public void putAll(Map<? extends String, ? extends Object> toMerge) {
+			binds.putAll(toMerge);
+			txtBindings.setText(txtBindings.getText() 
+				+ "\nputAll(" + toMerge + ")");
+		}
+
+		public Object remove(Object key) {
+			Object res = binds.remove(key);
+			txtBindings.setText(txtBindings.getText() 
+				+ "\nremove(" + key + ") " + res);
+			return res;
+		}
+
+		public void clear() {
+			binds.clear();
+			txtBindings.setText(txtBindings.getText() 
+				+ "\nclear()");
+		}
+
+		public boolean containsValue(Object value) {
+			boolean res = binds.containsValue(value);
+			txtBindings.setText(txtBindings.getText() 
+	    		+ "\ncontainsValue(" + value + ") " + res);
+			return res;
+		}
+
+		public Set<java.util.Map.Entry<String, Object>> entrySet() {
+			Set<java.util.Map.Entry<String, Object>> res = binds.entrySet();
+			txtBindings.setText(txtBindings.getText() 
+		    		+ "\nentrySet() " + res);
+			return res;
+		}
+
+		public boolean isEmpty() {
+			boolean res = binds.isEmpty();
+			txtBindings.setText(txtBindings.getText() 
+	    		+ "\nisEmpty() " + res);
+			return res;
+		}
+
+		public Set<String> keySet() {
+			Set<String> res = binds.keySet();
+			txtBindings.setText(txtBindings.getText() 
+		    	+ "\nkeySet() " + res);
+			return res;
+		}
+
+		public int size() {
+			int res = binds.size();
+			txtBindings.setText(txtBindings.getText() 
+				+ "\nsize() " + res);
+			return res;
+		}
+
+		public Collection<Object> values() {
+			Collection<Object> res = binds.values();
+			txtBindings.setText(txtBindings.getText() 
+		    	+ "\nvalues() " + res);
+			return res;
+		}		
+	}
 
 	public ScriptDebugger(ScriptEngine se, boolean debug) {
 		this.se = se;
+		/*
+		setBindings(getBindings(ScriptContext.GLOBAL_SCOPE), ScriptContext.GLOBAL_SCOPE);		
+		setBindings(getBindings(ScriptContext.ENGINE_SCOPE), ScriptContext.ENGINE_SCOPE);
+		*/
+		
 		this.debugOn = debug;
 
 		frame = new Frame();
@@ -117,7 +225,9 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		int stepLine;
 		
 		if(!bypass) {
+			 
 			Bindings bind = getBindings(ScriptContext.ENGINE_SCOPE);
+			/*
 			Set<Entry<String, Object>> set = bind.entrySet();
 			StringBuffer bufBinds = new StringBuffer();
 			for(Entry e:set) {
@@ -126,8 +236,17 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 				bufBinds.append(e.getValue());
 				bufBinds.append('\n');
 			}
+			bind = getBindings(ScriptContext.GLOBAL_SCOPE);
+			set = bind.entrySet();
+			for(Entry e:set) {
+				bufBinds.append(e.getKey());
+				bufBinds.append(':');
+				bufBinds.append(e.getValue());
+				bufBinds.append('\n');
+			}
 			
 			txtBindings.setText(bufBinds.toString());
+			*/
 			code = txtArea.getText();
 			start = 0;
 			end = code.length();
@@ -174,6 +293,11 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 
 	public Object eval(Reader reader, Bindings n) throws ScriptException {
 		init();
+		
+		if(!(n instanceof DebugBindings)) {
+			n = new DebugBindings(n);
+		}
+		
 		return se.eval(setupReader(reader), n);
 	}
 
@@ -190,6 +314,11 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 
 	public Object eval(String script, Bindings n) throws ScriptException {
 		init();
+		
+		if(!(n instanceof DebugBindings)) {
+			n = new DebugBindings(n);
+		}
+		
 		return se.eval(setup(script), n);
 	}
 
@@ -254,6 +383,11 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	}
 
 	public void setBindings(Bindings bindings, int scope) {
+		
+		if(!(bindings instanceof DebugBindings)) {
+			bindings = new DebugBindings(bindings);
+		} 
+		
 		se.setBindings(bindings, scope);
 	}
 
