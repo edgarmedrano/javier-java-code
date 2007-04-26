@@ -15,6 +15,7 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.event.WindowStateListener;
 import java.io.Reader;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
@@ -66,26 +67,102 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 				+ "\nput(" + name + "," + value + ") " + res);
 			return res;
 		}
-
+		
 		public Object get(Object key) {
 			Object res = binds.get(key);
+			/*
+			Object value = res;
+			StringBuffer sb = new StringBuffer();
+			
 			if(!key.toString().equals("__DEBUG__")) {
-				if(key.toString().equals("filled")) {
-					String str = "";
-					for(Method m:res.getClass().getMethods()) {
-						str += "\n" + m.toString();
+				if(value != null) {
+					Method getDefaultValue = null;
+					Method getIds = null;
+					Method getInt = null;
+					Method getString = null;
+					Object ids[] = {};
+					for(Method m: res.getClass().getMethods()) {
+						if(m.getName().equals("get") && m.getParameterTypes().length == 2) {
+							if(m.getParameterTypes()[0] == Integer.TYPE) {
+								getInt = m;
+							} else if(m.getParameterTypes()[0] == String.class) {
+								getString = m;
+							}
+						} else if(m.getName().equals("getDefaultValue")) {
+							getDefaultValue = m;
+						} else if(m.getName().equals("getIds")) {
+							getIds = m;
+						}
+						
+					}
+					sb.append(key);
+					sb.append(":");
+					if(getDefaultValue != null) {
+						try {
+							value = getDefaultValue.invoke(res, new Object[] { null });
+							if(value != null) {
+								sb.append(value);
+							}
+						} catch (SecurityException e) {
+						} catch (IllegalArgumentException e) {
+						} catch (IllegalAccessException e) {
+						} catch (InvocationTargetException e) {
+						}
+					}
+					if(getIds != null && getInt != null && getString != null) {
+						ids = new Object[] {};
+						try {
+							ids = (Object []) getIds.invoke(res, new Object[] {});
+						} catch (SecurityException e) {
+						} catch (IllegalArgumentException e) {
+						} catch (IllegalAccessException e) {
+						} catch (InvocationTargetException e) {
+						}
+						if(ids != null && ids.length > 0) {
+							sb.append("{");
+							for(int i = 0; i < ids.length; i++) {
+								if(i > 0) {
+									sb.append(", ");
+								}
+								sb.append(ids[i]);
+								sb.append(":");
+								value = "";
+								try {	
+									if(ids[i] instanceof String) {
+										value = getString.invoke(res, new Object[] {ids[i], res});
+									} else {
+										value = getInt.invoke(res, new Object[] {ids[i], res});
+									}
+									value = getDefaultValue.invoke(value, new Object[] { null });
+								} catch (SecurityException e) {
+								} catch (IllegalArgumentException e) {
+								} catch (IllegalAccessException e) {
+								} catch (InvocationTargetException e) {
+								}
+								sb.append(value);
+							}
+							sb.append("}");
+						}
 					}
 					txtBindings.setText(txtBindings.getText() 
-							+ "\n" + str);					
+							+ "\nget(" + key  + ") " + sb);					
+				} else {
+					txtBindings.setText(txtBindings.getText() 
+							+ "\nget(" + key  + ") null");					
 				}
 			}
+			*/
 			return res;
 		}
 
 		public boolean containsKey(Object key) {
 			boolean res = binds.containsKey(key);
-			txtBindings.setText(txtBindings.getText() 
-	    		+ "\ncontainsKey(" + key + ") " + res);
+			
+			if(!key.toString().equals("__DEBUG__")) {
+				txtBindings.setText(txtBindings.getText() 
+		    		+ "\ncontainsKey(" + key + ") " + res);
+			}
+			
 			return res;
 		}
 
@@ -97,8 +174,12 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 
 		public Object remove(Object key) {
 			Object res = binds.remove(key);
-			txtBindings.setText(txtBindings.getText() 
-				+ "\nremove(" + key + ") " + res);
+			
+			if(!key.toString().equals("__DEBUG__")) {
+				txtBindings.setText(txtBindings.getText() 
+					+ "\nremove(" + key + ") " + res);
+			}
+			
 			return res;
 		}
 
@@ -153,10 +234,14 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 
 	public ScriptDebugger(ScriptEngine se, boolean debug) {
 		this.se = se;
-		/*
-		setBindings(getBindings(ScriptContext.GLOBAL_SCOPE), ScriptContext.GLOBAL_SCOPE);		
-		setBindings(getBindings(ScriptContext.ENGINE_SCOPE), ScriptContext.ENGINE_SCOPE);
-		*/
+		if(!(getBindings(ScriptContext.ENGINE_SCOPE) instanceof DebugBindings)) {
+			setBindings(new DebugBindings(getBindings(ScriptContext.ENGINE_SCOPE))
+				, ScriptContext.ENGINE_SCOPE);
+		}
+		if(!(getBindings(ScriptContext.GLOBAL_SCOPE) instanceof DebugBindings)) {
+			setBindings(new DebugBindings(getBindings(ScriptContext.GLOBAL_SCOPE))
+				, ScriptContext.GLOBAL_SCOPE);
+		}
 		
 		this.debugOn = debug;
 
@@ -193,7 +278,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		btnStop.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
 					stop = true;
-					bypass = false;
+					bypass = true;
 				}
 			});
 		Button btnClose = new Button("Close");
@@ -218,35 +303,33 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		this(se,true);
 	}
 
-	public boolean cb(int line) {
+	public boolean cb(int line, Object ref) {
 		String code;
 		int start;
 		int end;
 		int stepLine;
 		
 		if(!bypass) {
-			 
+			/* 
 			Bindings bind = getBindings(ScriptContext.ENGINE_SCOPE);
-			/*
+			
 			Set<Entry<String, Object>> set = bind.entrySet();
 			StringBuffer bufBinds = new StringBuffer();
-			for(Entry e:set) {
-				bufBinds.append(e.getKey());
-				bufBinds.append(':');
-				bufBinds.append(e.getValue());
+			for(Entry<String, Object> e:set) {
+				bufBinds.append(getString(e.getKey(),e.getValue()));
 				bufBinds.append('\n');
 			}
 			bind = getBindings(ScriptContext.GLOBAL_SCOPE);
 			set = bind.entrySet();
-			for(Entry e:set) {
-				bufBinds.append(e.getKey());
-				bufBinds.append(':');
-				bufBinds.append(e.getValue());
+			for(Entry<String, Object> e:set) {
+				bufBinds.append(getString(e.getKey(),e.getValue()));
 				bufBinds.append('\n');
 			}
 			
 			txtBindings.setText(bufBinds.toString());
 			*/
+			txtBindings.setText(getLocals(ref));
+			
 			code = txtArea.getText();
 			start = 0;
 			end = code.length();
@@ -280,6 +363,121 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 			return true;
 		}
 		return false;
+	}
+
+	private String getLocals(Object ref) {
+		StringBuffer sb = new StringBuffer();
+		Object value = ref;
+		
+		if(ref == null) {
+			return "";
+		}
+		
+		Method getDefaultValue = null;
+		Method getIds = null;
+		Method getInt = null;
+		Method getString = null;
+		Method getParentScope = null; 
+		Object ids[] = {};
+		
+		for(Method m: ref.getClass().getMethods()) {
+			if(m.getName().equals("get") && m.getParameterTypes().length == 2) {
+				if(m.getParameterTypes()[0] == Integer.TYPE) {
+					getInt = m;
+				} else if(m.getParameterTypes()[0] == String.class) {
+					getString = m;
+				}
+			} else if(m.getName().equals("getDefaultValue")) {
+				getDefaultValue = m;
+			} else if(m.getName().equals("getIds")) {
+				getIds = m;
+			} else if(m.getName().equals("getParentScope")) {
+				getParentScope = m;
+			}
+			
+		}
+		
+		if(getParentScope == null) {
+			return "";
+		}
+		
+		try {
+			sb.append(getLocals(getParentScope.invoke(ref, new Object[] {})));
+		} catch (IllegalArgumentException e1) {
+		} catch (IllegalAccessException e1) {
+		} catch (InvocationTargetException e1) {
+		}
+		
+		sb.append(ref);
+		sb.append(":");
+		if(getDefaultValue != null) {
+			try {
+				value = getDefaultValue.invoke(ref, new Object[] { null });
+				if(value != null) {
+					sb.append(value);
+				}
+			} catch (SecurityException e) {
+			} catch (IllegalArgumentException e) {
+			} catch (IllegalAccessException e) {
+			} catch (InvocationTargetException e) {
+			}
+		}
+		
+		if(getIds != null && getInt != null && getString != null) {
+			ids = new Object[] {};
+			try {
+				ids = (Object []) getIds.invoke(ref, new Object[] {});
+			} catch (SecurityException e) {
+			} catch (IllegalArgumentException e) {
+			} catch (IllegalAccessException e) {
+			} catch (InvocationTargetException e) {
+			}
+			if(ids != null && ids.length > 0) {
+				sb.append("{ ");
+				for(int i = 0; i < ids.length; i++) {
+					if(i > 0) {
+						sb.append("\n, ");
+					}
+					
+					value = null;
+					try {	
+						if(ids[i] instanceof String) {
+							value = getString.invoke(ref, new Object[] {ids[i], ref});
+						} else {
+							value = getInt.invoke(ref, new Object[] {ids[i], ref});
+						}
+						value = getDefaultValue.invoke(value, new Object[] { null });
+					} catch (SecurityException e) {
+					} catch (IllegalArgumentException e) {
+						e.printStackTrace();
+					} catch (IllegalAccessException e) {
+					} catch (InvocationTargetException e) {
+					}
+					/*
+					if(value !=  null) {
+						sb.append(getString(ids[i].toString(),value,level));
+					}
+					*/
+					sb.append(ids[i].toString());
+					sb.append(": ");
+					if(value !=  null) {
+						if(value.toString().length() > 128) {
+							sb.append(value.toString().substring(0, 128).replaceAll("\n", "\\n"));
+						} else {
+							sb.append(value.toString().replaceAll("\n", " "));
+						}
+					} else {
+						sb.append("null");						
+					}
+						
+				}
+				sb.append(" }");
+			}
+		} else {
+			sb.append("null");
+		}
+			
+		return sb.toString();
 	}
 
 	public Bindings createBindings() {
@@ -351,7 +549,96 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	public <T> T getInterface(Object thiz, Class<T> clasz) {
 		return ((Invocable) se).getInterface(thiz, clasz);
 	}
+	
+	public String getString(String name, Object ref) {
+		return getString(name, ref, 0);
+	}
 
+	public String getString(String name, Object ref,int level) {
+		StringBuffer sb = new StringBuffer();
+		Object value = ref;
+		
+		level = level + 1;
+		if(level > 3) {
+			return "";
+		}
+		
+		sb.append(name);
+		sb.append(":");
+		if(value != null) {
+			Method getDefaultValue = null;
+			Method getIds = null;
+			Method getInt = null;
+			Method getString = null;
+			Object ids[] = {};
+			for(Method m: ref.getClass().getMethods()) {
+				if(m.getName().equals("get") && m.getParameterTypes().length == 2) {
+					if(m.getParameterTypes()[0] == Integer.TYPE) {
+						getInt = m;
+					} else if(m.getParameterTypes()[0] == String.class) {
+						getString = m;
+					}
+				} else if(m.getName().equals("getDefaultValue")) {
+					getDefaultValue = m;
+				} else if(m.getName().equals("getIds")) {
+					getIds = m;
+				}
+				
+			}
+			if(getDefaultValue != null) {
+				try {
+					value = getDefaultValue.invoke(ref, new Object[] { null });
+					if(value != null) {
+						sb.append(value);
+					}
+				} catch (SecurityException e) {
+				} catch (IllegalArgumentException e) {
+				} catch (IllegalAccessException e) {
+				} catch (InvocationTargetException e) {
+				}
+			}
+			if(getIds != null && getInt != null && getString != null) {
+				ids = new Object[] {};
+				try {
+					ids = (Object []) getIds.invoke(ref, new Object[] {});
+				} catch (SecurityException e) {
+				} catch (IllegalArgumentException e) {
+				} catch (IllegalAccessException e) {
+				} catch (InvocationTargetException e) {
+				}
+				if(ids != null && ids.length > 0) {
+					sb.append("{");
+					for(int i = 0; i < ids.length; i++) {
+						if(i > 0) {
+							sb.append(", ");
+						}
+						
+						value = null;
+						try {	
+							if(ids[i] instanceof String) {
+								value = getString.invoke(ref, new Object[] {ids[i], ref});
+							} else {
+								value = getInt.invoke(ref, new Object[] {ids[i], ref});
+							}
+						} catch (SecurityException e) {
+						} catch (IllegalArgumentException e) {
+						} catch (IllegalAccessException e) {
+						} catch (InvocationTargetException e) {
+						}
+						if(value !=  null) {
+							sb.append(getString(ids[i].toString(),value,level));
+						}
+					}
+					sb.append("}");
+				}
+			}
+		} else {
+			sb.append("null");
+		}
+			
+		return sb.toString();
+	} 
+	
 	protected void init() {
 		se.put("__DEBUG__", this);
 		bypass = false;
@@ -521,7 +808,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 								&& !switchStament	
 								&& !comment && !lcomment 
 								&& !quotes && !squotes) {
-								callbackCode = "if(__DEBUG__.cb(" + line + ")) return;";
+								callbackCode = "if(__DEBUG__.cb(" + line + ",(function() {}).__parent__)) throw(\"error.debug.stop\");";
 								debugCode.replace(i + 1, i + 1, callbackCode);
 								i += callbackCode.length();
 							}
