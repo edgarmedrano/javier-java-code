@@ -394,7 +394,6 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 			} else if(m.getName().equals("getParentScope")) {
 				getParentScope = m;
 			}
-			
 		}
 		
 		if(getParentScope == null) {
@@ -408,6 +407,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		} catch (InvocationTargetException e1) {
 		}
 		
+		sb.append("\n");
 		sb.append(ref);
 		sb.append(":");
 		if(getDefaultValue != null) {
@@ -435,8 +435,9 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 			if(ids != null && ids.length > 0) {
 				sb.append("{ ");
 				for(int i = 0; i < ids.length; i++) {
+					sb.append("\n\t");
 					if(i > 0) {
-						sb.append("\n, ");
+						sb.append(", ");
 					}
 					
 					value = null;
@@ -446,12 +447,17 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 						} else {
 							value = getInt.invoke(ref, new Object[] {ids[i], ref});
 						}
-						value = getDefaultValue.invoke(value, new Object[] { null });
+						if(value !=  null) {
+							getDefaultValue = value.getClass().getMethod("getDefaultValue"
+									, new Class<?>[] { Class.class });
+							value = getDefaultValue.invoke(value, new Object[] { null });
+						}
 					} catch (SecurityException e) {
 					} catch (IllegalArgumentException e) {
 						e.printStackTrace();
 					} catch (IllegalAccessException e) {
 					} catch (InvocationTargetException e) {
+					} catch (NoSuchMethodException e) {
 					}
 					/*
 					if(value !=  null) {
@@ -462,7 +468,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 					sb.append(": ");
 					if(value !=  null) {
 						if(value.toString().length() > 128) {
-							sb.append(value.toString().substring(0, 128).replaceAll("\n", "\\n"));
+							sb.append(value.toString().substring(0, 128).replaceAll("\n", " "));
 						} else {
 							sb.append(value.toString().replaceAll("\n", " "));
 						}
