@@ -1,3 +1,26 @@
+/**
+ * File:        XMLHTTPNetworkHandler.java
+ * Description: A network handler that uses XmlHttpRequest
+ *              from swing-ws project 
+ * Author:      Edgar Medrano Pérez 
+ *              edgarmedrano at gmail dot com
+ * Created:     2007.04.14
+ * Company:     JAVIER project
+ *              http://javier.sourceforge.net
+ * Notes:       This class is not used in JAVIER project right now 
+ *              (2007.04.28) because XmlHttpRequest is unestable. 
+ *              If you want to give it a try, you must include the 
+ *              following libraries to your project:
+ *              
+ *                  commons-codec-1.3.jar
+ *                  commons-httpclient-3.0.1.jar
+ *                  commons-logging-1.1.jar
+ *                  jdom.jar
+ *                  swing-worker.jar
+ *                  swingx-bean.jar
+ *                  swingx-ws.jar
+ */
+
 package org.javier.browser.handlers;
 
 import java.beans.PropertyChangeEvent;
@@ -99,7 +122,6 @@ public class XMLHTTPNetworkHandler
 	}
 
 	public Node getXML() {
-		// TODO Auto-generated method stub
 		return xmlhttp.getResponseXML();
 	}
 }

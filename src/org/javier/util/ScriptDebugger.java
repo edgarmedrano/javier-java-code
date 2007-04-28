@@ -7,20 +7,16 @@ import java.awt.FlowLayout;
 import java.awt.Frame;
 import java.awt.Label;
 import java.awt.TextArea;
-import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-import java.awt.event.WindowStateListener;
 import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 import javax.script.Bindings;
@@ -29,7 +25,6 @@ import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 import javax.script.ScriptException;
-import javax.script.SimpleBindings;
 
 public class ScriptDebugger implements ScriptEngine, Invocable {
 
@@ -647,9 +642,8 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	
 	protected void init() {
 		se.put("__DEBUG__", this);
-		bypass = false;
 		frame.pack();
-		frame.setVisible(true);
+		frame.setVisible(debugOn);
 	}
 
 	public Object invokeFunction(String name, Object... args)
@@ -694,10 +688,12 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 
 	public void setDebugOn(boolean debugOn) {
 		this.debugOn = debugOn;
+		bypass = !debugOn;
+		frame.setVisible(debugOn);
 	}
 
 	protected String setup(String code) {
-		StringBuffer debugCode = new StringBuffer(code);
+		StringBuffer debugCode;
 		String callbackCode;
 		int parentesis = 0;
 		int sparentesis = 0;
@@ -709,123 +705,126 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		boolean ternary = false;
 		boolean switchStament = false;
 		
-		
-		txtArea.setText(txtArea.getText() + "\n" + code);
 		if(debugOn) {
 			debugCode = new StringBuffer(code);
-			for(int i = 0; i < debugCode.length(); i++) {
-				if(!escape) {
-					switch(debugCode.charAt(i)) {
-						case '\n': 
-							line++;
-							if(lcomment) {
-								lcomment = false;
-							}
-							break;
-						case '(': 
-							if(!comment && !lcomment 
-								&& !quotes && !squotes) {
-								parentesis++;
-							}
-							break;
-						case ')': 
-							if(!comment && !lcomment 
-								&& !quotes && !squotes) {
-								parentesis--;
-							}
-							break;
-						case '[': 
-							if(!comment && !lcomment 
-								&& !quotes && !squotes) {
-								sparentesis++;
-							}
-							break;
-						case ']': 
-							if(!comment && !lcomment 
-								&& !quotes && !squotes) {
-								sparentesis--;
-							}
-							break;
-						case '\\':
-							if(quotes || squotes) {
-								escape = true;
-							}
-							break;
-						case '\'':
-							if(!comment && !lcomment && !quotes) {
-								squotes = !squotes;
-							}
-							break;
-						case '"':
-							if(!comment && !lcomment 
-								&& !escape && !squotes) {
-								quotes = !quotes;
-							}
-							break;
-						case '/':
-							if(!comment && !lcomment && !quotes && !squotes) {
-								if(i + 1 <= debugCode.length()) {
-									if(debugCode.charAt(i + 1) == '*') {
-										comment = true;
-										i++;
-									} else if(debugCode.charAt(i + 1) == '/') {
-										lcomment = true;
-										i++;
+			txtArea.setText(txtArea.getText() + "\n" + code);
+			if(debugOn) {
+				debugCode = new StringBuffer(code);
+				for(int i = 0; i < debugCode.length(); i++) {
+					if(!escape) {
+						switch(debugCode.charAt(i)) {
+							case '\n': 
+								line++;
+								if(lcomment) {
+									lcomment = false;
+								}
+								break;
+							case '(': 
+								if(!comment && !lcomment 
+									&& !quotes && !squotes) {
+									parentesis++;
+								}
+								break;
+							case ')': 
+								if(!comment && !lcomment 
+									&& !quotes && !squotes) {
+									parentesis--;
+								}
+								break;
+							case '[': 
+								if(!comment && !lcomment 
+									&& !quotes && !squotes) {
+									sparentesis++;
+								}
+								break;
+							case ']': 
+								if(!comment && !lcomment 
+									&& !quotes && !squotes) {
+									sparentesis--;
+								}
+								break;
+							case '\\':
+								if(quotes || squotes) {
+									escape = true;
+								}
+								break;
+							case '\'':
+								if(!comment && !lcomment && !quotes) {
+									squotes = !squotes;
+								}
+								break;
+							case '"':
+								if(!comment && !lcomment 
+									&& !escape && !squotes) {
+									quotes = !quotes;
+								}
+								break;
+							case '/':
+								if(!comment && !lcomment && !quotes && !squotes) {
+									if(i + 1 <= debugCode.length()) {
+										if(debugCode.charAt(i + 1) == '*') {
+											comment = true;
+											i++;
+										} else if(debugCode.charAt(i + 1) == '/') {
+											lcomment = true;
+											i++;
+										}
 									}
 								}
-							}
-							break;
-						case '*':
-							if(comment) {
-								if(i + 1 <= debugCode.length()) {
-									if(debugCode.charAt(i + 1) == '/') {
-										comment = false;
-										i++;
+								break;
+							case '*':
+								if(comment) {
+									if(i + 1 <= debugCode.length()) {
+										if(debugCode.charAt(i + 1) == '/') {
+											comment = false;
+											i++;
+										}
 									}
 								}
-							}
-							break;
-						case 's':
-							if(!comment && !lcomment && !quotes && !squotes) {
-								if(debugCode.indexOf("switch", i) == i) {
-									switchStament = true;
+								break;
+							case 's':
+								if(!comment && !lcomment && !quotes && !squotes) {
+									if(debugCode.indexOf("switch", i) == i) {
+										switchStament = true;
+									}
 								}
-							}
-							break;
-						case '?':
-							if(!comment && !lcomment && !quotes && !squotes) {
-								ternary = true;
-							}
-							break;
-						case ':':
-							if(!comment && !lcomment && !quotes && !squotes) {
-								if(ternary) {
-									ternary = false;
-									break;
-								} else if(switchStament) {
-									switchStament = false;
-									break;
+								break;
+							case '?':
+								if(!comment && !lcomment && !quotes && !squotes) {
+									ternary = true;
 								}
-							}
-							// break; // no break here
-						case '{':
-						case ';':
-							if(sparentesis == 0 && parentesis == 0
-								&& !switchStament	
-								&& !comment && !lcomment 
-								&& !quotes && !squotes) {
-								callbackCode = "if(__DEBUG__.cb(" + line + ",(function() {}).__parent__)) throw(\"error.debug.stop\");";
-								debugCode.replace(i + 1, i + 1, callbackCode);
-								i += callbackCode.length();
-							}
-							break;
-					} 
-				} else {	
-					escape = false;
+								break;
+							case ':':
+								if(!comment && !lcomment && !quotes && !squotes) {
+									if(ternary) {
+										ternary = false;
+										break;
+									} else if(switchStament) {
+										switchStament = false;
+										break;
+									}
+								}
+								// break; // no break here
+							case '{':
+							case ';':
+								if(sparentesis == 0 && parentesis == 0
+									&& !switchStament	
+									&& !comment && !lcomment 
+									&& !quotes && !squotes) {
+									callbackCode = "if(__DEBUG__.cb(" + line + ",(function() {}).__parent__)) throw(\"error.debug.stop\");";
+									debugCode.replace(i + 1, i + 1, callbackCode);
+									i += callbackCode.length();
+								}
+								break;
+						} 
+					} else {	
+						escape = false;
+					}
 				}
+				code = debugCode.toString();
 			}
-			code = debugCode.toString();
 		}
+		
 		return code;
 	}
 

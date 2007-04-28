@@ -1,7 +1,7 @@
 /**
  * File:        Document.java
  * Description: The VoiceXML document
- * Author:      Edgar Medrano PÃ©rez 
+ * Author:      Edgar Medrano Pérez 
  *              edgarmedrano at gmail dot com
  * Created:     2007.04.14
  * Company:     JAVIER project
@@ -11,7 +11,6 @@
 
 package org.javier.browser;
 
-import java.net.URLEncoder;
 import java.util.Hashtable;
 import java.util.Vector;
 
@@ -22,18 +21,24 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.javier.util.EscapeUnescape;
 import org.javier.util.FastConcatenation;
 import org.javier.util.ScriptDebugger;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+/**
+ * 
+ * @author Edgar Medrano Pérez
+ *
+ */
 public class Document {
 	static public enum State {
 		CREATED, LOADING, LOADED, PARSING, PARSED, EXECUTING, EXECUTED, ERROR
 	}
 	static protected enum Tag {
-		_Text, _Comment, Assign, Audio, Block, Catch, Choice,	Clear, 
+		_Text, _Comment, Assign, Audio, Block, Catch, Choice, Clear, 
 		Disconnect, Else, ElseIf, Enumerate, Error, Exit, Field, Filled, 
 		Form, GoTo, Grammar, Help, If, Initial, Link, Log, Menu, Meta, 
 		NoInput, NoMatch, Object, Option, Param, Prompt, Property, Record,
@@ -42,62 +47,17 @@ public class Document {
 	}
 	static protected final ScriptEngineManager sem = new ScriptEngineManager();
 	static protected final Hashtable<String, Tag> htTagEnum 
-		= new Hashtable<String, Tag>(60);
+		= new Hashtable<String, Tag>(Tag.values().length);
 	static {
-		htTagEnum.put("#text", Tag._Text);
-		htTagEnum.put("#comment", Tag._Comment);
-		htTagEnum.put("assign", Tag.Assign);
-		htTagEnum.put("audio", Tag.Audio);
-		htTagEnum.put("block", Tag.Block);
-		htTagEnum.put("catch", Tag.Catch);
-		htTagEnum.put("choice", Tag.Choice);
-		htTagEnum.put("clear", Tag.Clear);
-		htTagEnum.put("disconnect", Tag.Disconnect);
-		htTagEnum.put("else", Tag.Else);
-		htTagEnum.put("elseif", Tag.ElseIf);
-		htTagEnum.put("enumerate", Tag.Enumerate);
-		htTagEnum.put("error", Tag.Error);
-		htTagEnum.put("exit", Tag.Exit);
-		htTagEnum.put("field", Tag.Field);
-		htTagEnum.put("filled", Tag.Filled);
-		htTagEnum.put("form", Tag.Form);
-		htTagEnum.put("goto", Tag.GoTo);
-		htTagEnum.put("grammar", Tag.Grammar);
-		htTagEnum.put("help", Tag.Help);
-		htTagEnum.put("if", Tag.If);
-		htTagEnum.put("initial", Tag.Initial);
-		htTagEnum.put("link", Tag.Link);
-		htTagEnum.put("log", Tag.Log);
-		htTagEnum.put("menu", Tag.Menu);
-		htTagEnum.put("meta", Tag.Meta);
-		htTagEnum.put("noinput", Tag.NoInput);
-		htTagEnum.put("nomatch", Tag.NoMatch);
-		htTagEnum.put("object", Tag.Object);
-		htTagEnum.put("option", Tag.Option);
-		htTagEnum.put("param", Tag.Param);
-		htTagEnum.put("prompt", Tag.Prompt);
-		htTagEnum.put("property", Tag.Property);
-		htTagEnum.put("record", Tag.Record);
-		htTagEnum.put("reprompt", Tag.Reprompt);
-		htTagEnum.put("return", Tag.Return);
-		htTagEnum.put("script", Tag.Script);
-		htTagEnum.put("subdialog", Tag.Subdialog);
-		htTagEnum.put("submit", Tag.Submit);
-		htTagEnum.put("throw", Tag.Throw);
-		htTagEnum.put("transfer", Tag.Transfer);
-		htTagEnum.put("value", Tag.Value);
-		htTagEnum.put("var", Tag.Var);
-		htTagEnum.put("vxml", Tag.Vxml);
-		htTagEnum.put("xml", Tag.Xml);
+		for(Tag tag: Tag.values()) {
+			if(tag.toString().indexOf('_') == 0) {
+				htTagEnum.put('#' + tag.toString().toLowerCase().substring(1),tag);
+			} else {
+				htTagEnum.put(tag.toString().toLowerCase(),tag);
+			}
+		}
 	}	
 
-	protected static String encodeURIComponent(String str) {
-		try {
-			str = URLEncoder.encode(str, "UTF-8");
-		} catch(Exception e) { }
-		
-		return str.replaceAll("\\+", "%20").replaceAll("%2B", "+");
-    }
 	volatile private State state;
 	private String url;
 	private Node xml;
@@ -118,7 +78,7 @@ public class Document {
 	public Document(String url) {
 		this(url,"GET","",0,0,0);
 		state = State.CREATED;
-		seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"));
+		seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"), false);
 	}
 		
 	public Document(String url
@@ -149,8 +109,8 @@ public class Document {
 		return "";
 	}
 	
-	protected String escape(String str) {
-		return encodeURIComponent(str);
+	protected String escape(String src) {
+		return EscapeUnescape.escape(src);
 	}
 	
 	public Document execute(Javier __browser__) 
@@ -405,7 +365,7 @@ public class Document {
 							, childA.getNamedItem("name").getNodeValue()
 							, "_count;"
 							, this.parse(child,level + 2));
-					fc.push(snst, "\t\tfilled = "
+					fc.push(snst, "\t\tfilled = \"\" + "
 							, "__browser__.getInput(\""
 							, childA.getNamedItem("name").getNodeValue()
 							, "\","
@@ -561,7 +521,7 @@ public class Document {
 					fc.push(this.parse(child,level + 5));
 					
 					if(childTag == Tag.Menu) {
-						fc.push(snst, "\t\t\t\t\t\tfilled = __browser__.getInput(\"type your choice\",\"\");");
+						fc.push(snst, "\t\t\t\t\t\tfilled = \"\" + __browser__.getInput(\"type your choice\",\"\");");
 						fc.push(snst, "\t\t\t\t\t\tif(filled) {");
 						fc.push(snst, "\t\t\t\t\t\t\tswitch(filled) { ");
 						for(int j = 0; j < childNL; j++) {

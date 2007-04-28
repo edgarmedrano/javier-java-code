@@ -65,6 +65,7 @@ public class Javier
 		javier.addJavierListener(new JavierListener() {
 				public void excecutionEnded(int endCode) {
 					System.out.println("Done!");
+					System.exit(endCode);
 				}
 				public void loadStateChanged(int readyState) {
 					String advance = "";
@@ -280,6 +281,7 @@ public class Javier
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			
 			if(document.getUrl().equals("")) {
 				break;
 			}

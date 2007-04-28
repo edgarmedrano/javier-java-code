@@ -1,3 +1,16 @@
+/**
+ * File:        MSXMLHTTPNetworkHandler.java
+ * Description: A network handler that uses MSXMLHTTP
+ * Author:      Edgar Medrano Pérez 
+ *              edgarmedrano at gmail dot com
+ * Created:     2007.04.21
+ * Company:     JAVIER project
+ *              http://javier.sourceforge.net
+ * Notes:       WARNING!!!!!!
+ *              This class runs only on MS Windows, because
+ *              it relies on MSXML.dll in the end 
+ */
+
 package org.javier.browser.handlers;
 
 import static org.javier.jacob.OleAutomation.createActiveXObject;
@@ -10,7 +23,18 @@ import org.javier.jacob.MSXML.MSXMLHTTP;
 import org.javier.jacob.MSXML.JavaNode;
 import org.w3c.dom.Node;
 
-public class MSXMLHTTPNetworkHandler extends AbstractNetworkHandler implements Runnable {
+/**
+ * A network handler that uses {@link MSXMLHTTP}.
+ * <p><strong>WARNING!!!!!!<br>
+ * This class runs only on MS Windows, because it relies on MSXML.dll in 
+ * the end.</strong></p>
+ * 
+ * @author Edgar Medrano Pérez
+ * @see MSXMLHTTP
+ */
+public class MSXMLHTTPNetworkHandler 
+	extends AbstractNetworkHandler 
+	implements Runnable {
 	protected MSXMLHTTP xmlhttp;
 	private DocType dt;
 	private Thread timer;
@@ -20,24 +44,36 @@ public class MSXMLHTTPNetworkHandler extends AbstractNetworkHandler implements R
 		xmlhttp = (MSXMLHTTP) createActiveXObject(MSXMLHTTP.class); 
 	}
 	
-	public void readyStateChange() {
-		int readyState = xmlhttp.getReadyState(); 
-		if (readyState == 4) {
-			int status = xmlhttp.getStatus();
-			if(status == 200 || status == -1) {
-				if(dt == DocType.Xml) {
-					fireLoaded(getXML()); 		     
-				} else {
-					fireLoaded(getText()); 	
-				}
-			} else {	
-				fireLoaded("error.badfetch.http." + xmlhttp.getStatus());
-			}
-		} else {
-			fireReadyStateChanged(xmlhttp.getReadyState());
-		}
+	/**
+	 * Use this to get the response text
+	 * @return the response text
+	 */
+	public String getText() {
+		return xmlhttp.getResponseText();
 	}
 	
+	/**
+	 * Use this to get the response XML
+	 * @return the response XML
+	 */
+	public Node getXML() {
+		DOMDocument doc = xmlhttp.responseXML();
+		
+		if(doc == null) {
+			return null;
+		}
+		
+		return new JavaNode(doc);
+	}
+
+	/**
+	 * Loads the specified {@link Document} asynchronously.
+	 * 
+	 * @param docType the document type Xml/Text
+	 * @param docRef  the document to be loaded 
+	 * @return <code>true</code> on success. 
+	 *         Actually it always return <code>true</code>.
+	 */
 	public boolean load(DocType docType, Document docRef) {
 		String url = docRef.getUrl();
 		String method = docRef.getMethod();
@@ -88,20 +124,31 @@ public class MSXMLHTTPNetworkHandler extends AbstractNetworkHandler implements R
 		return true;
 	}
 
-	public String getText() {
-		return xmlhttp.getResponseText();
-	}
-
-	public Node getXML() {
-		DOMDocument doc = xmlhttp.responseXML();
-		
-		if(doc == null) {
-			return null;
+	/**
+	 * Handles the response and the state changes
+	 */
+	protected void readyStateChange() {
+		int readyState = xmlhttp.getReadyState(); 
+		if (readyState == 4) {
+			int status = xmlhttp.getStatus();
+			if(status == 200 || status == -1) {
+				if(dt == DocType.Xml) {
+					fireLoaded(getXML()); 		     
+				} else {
+					fireLoaded(getText()); 	
+				}
+			} else {	
+				fireLoaded("error.badfetch.http." + xmlhttp.getStatus());
+			}
+		} else {
+			fireReadyStateChanged(xmlhttp.getReadyState());
 		}
-		
-		return new JavaNode(doc);
 	}
 
+	/**
+	 * Polls the request state and report changes, this method calls
+	 * readyStateChange
+	 */
 	public void run() {
 		int readyState = xmlhttp.getReadyState(); 
 		int lastReadyState = readyState;
