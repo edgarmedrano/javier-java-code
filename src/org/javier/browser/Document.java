@@ -1,6 +1,6 @@
 /**
  * File:        Document.java
- * Description: The VoiceXML document
+ * Description: Excecutes the VoiceXML document
  * Author:      Edgar Medrano Pérez 
  *              edgarmedrano at gmail dot com
  * Created:     2007.04.14
@@ -29,14 +29,24 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
+ * This class have three purpouses. First, to specify how to load the document
+ * (see constructors for better understanding). Second, to parse the VoiceXML
+ * document translating it to JavaScript. And third, to execute the script.
  * 
  * @author Edgar Medrano Pérez
- *
  */
 public class Document {
+	
+	/**
+	 * Enumerates the document states.
+	 */
 	static public enum State {
 		CREATED, LOADING, LOADED, PARSING, PARSED, EXECUTING, EXECUTED, ERROR
 	}
+	
+	/**
+	 * All the VoiceXML tags.
+	 */
 	static protected enum Tag {
 		_Text, _Comment, Assign, Audio, Block, Catch, Choice, Clear, 
 		Disconnect, Else, ElseIf, Enumerate, Error, Exit, Field, Filled, 
@@ -45,7 +55,14 @@ public class Document {
 		Reprompt, Return, Script, Subdialog, Submit, Throw, Transfer, Value,
 		Var, Vxml, Xml
 	}
+	
+	/**
+	 * The script engine manager that will produce all script engines used to
+	 * evaluate documents.
+	 */
 	static protected final ScriptEngineManager sem = new ScriptEngineManager();
+	
+	/** Maps the tag names to {@link Tag} enum. */
 	static protected final Hashtable<String, Tag> htTagEnum 
 		= new Hashtable<String, Tag>(Tag.values().length);
 	static {
@@ -58,29 +75,71 @@ public class Document {
 		}
 	}	
 
+	/** The document's state. */
 	volatile private State state;
+	
+	/** The document's url. */
 	private String url;
+	
+	/** The document's xml. */
 	private Node xml;
+	
+	/** The document's JavaScript code. */
 	private String js;
+	
+	/** The HTTP method used to get the VoiceXML document (GET/POST). */
 	private String method;
+	
+	/** The encode type used to get the VoiceXML document. */
 	private String enctype;
+	
+	/** The time to wait while getting the VoiceXML document before desist. */
 	private int timeout;
+	
+	/** The maximum age (in cache) of the required VoiceXML document. */
 	private int maxage;
+	
+	/** The maximum stale of the required VoiceXML document. */
 	private int maxstale;
+	
+	/** The document's listeners. */
 	private final Vector<DocumentListener> vecListeners = new Vector<DocumentListener>();
 
+	/** The script engine used to evaluate the document's JavaScript code. */
 	protected ScriptEngine seJavaScript;
 	
+	/**
+	 * Default constructor rarely used.
+	 */
 	public Document() {
 		this("");
 	}
 
+	/**
+	 * Creates a document which will load it's associated VoiceXML document
+	 * from the specified url. Note that the document is not loaded, actually 
+	 * the document is not loaded by this class at all. 
+	 * 
+	 * @param url the document's url
+	 */
 	public Document(String url) {
 		this(url,"GET","",0,0,0);
 		state = State.CREATED;
 		seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"), false);
 	}
 		
+	/**
+	 * Creates a document which will load it's associated VoiceXML document
+	 * from the specified url and all other parameters
+	 * 
+	 * @param maxAge   the document's max age
+	 * @param enctype  the document's encode type
+	 * @param maxStale the document's max stale
+	 * @param method   the HTTP method (GET/POST)
+	 * @param timeout  the time to wait while getting the document before 
+	 *                 desist
+	 * @param url      the document's URL
+	 */
 	public Document(String url
 			, String method
 			, String enctype
@@ -97,10 +156,21 @@ public class Document {
 		this.xml = null;
 	}
 	
+	/**
+	 * Adds a document listener.
+	 * 
+	 * @param l the listener object
+	 */
 	public void addDocumentListener(DocumentListener l) {
 		vecListeners.add(l);
 	}	
 	
+	/**
+	 * End tag string representation.
+	 * 
+	 * @param node the node
+	 * @return the end tag string representation
+	 */
 	protected String endTag(Node node) {
 		if(node.hasChildNodes()) {
 			return "/* </" + node.getNodeName() + "> */";
@@ -109,10 +179,26 @@ public class Document {
 		return "";
 	}
 	
+	/**
+	 * JavaScript escape.
+	 * 
+	 * @param src the string to be escaped
+	 * @return the escaped string
+	 */
 	protected String escape(String src) {
 		return EscapeUnescape.escape(src);
 	}
 	
+	/**
+	 * Executes the document.
+	 * 
+	 * @param __browser__ points to the broswer who loaded the document
+	 * @return the next document to be loaded and executed
+	 * @throws ScriptException if an scripting error is reached or if
+	 *                         the script throws an unhandled exception
+	 * @throws NoSuchMethodException if the VoiceXML document cann´t be
+	 *                               parsed or has errors 
+	 */
 	public Document execute(Javier __browser__) 
 		throws ScriptException
 			, NoSuchMethodException {
@@ -141,42 +227,74 @@ public class Document {
 		return (Document) nextDoc;		
 	}
 	
+	/**
+	 * Propagates the "comment found" event to document's listeners.
+	 * 
+	 * @param description the comment found
+	 */
 	protected void fireCommentFound(String description) {
 		for(DocumentListener l: vecListeners) {
 			l.commentFound(description);
 		}
 	}	
 
+	/**
+	 * Propagates the "error found" event to document's listeners.
+	 * 
+	 * @param description the error found
+	 */
 	protected void fireErrorFound(String description) {
 		for(DocumentListener l: vecListeners) {
 			l.errorFound(description);
 		}
 	}
 	
+	/**
+	 * Propagates the "state changed" event to document's listeners.
+	 * 
+	 * @param state the new state
+	 */
 	private void fireStateChanged(State state) {
 		for(DocumentListener l: vecListeners) {
 			l.stateChanged(state);
 		}
 	}
 
+	/**
+	 * Propagates the "verbose found" event to document's listeners.
+	 * 
+	 * @param description the description
+	 */
 	protected void fireVerboseFound(String description) {
 		for(DocumentListener l: vecListeners) {
 			l.verboseFound(description);
 		}
 	}
 		
+    /**
+	 * Propagates the "warning found" event to document's listeners.
+	 * 
+	 * @param description the warning description
+	 */
     protected void fireWarningFound(String description) {
 		for(DocumentListener l: vecListeners) {
 			l.warningFound(description);
 		}
 	}
 	
+    /**
+	 * Gets the document's encode type.
+	 * 
+	 * @return the document's encode type
+	 */
     public String getEnctype() {
 		return enctype;
 	}
 	
     /**
-	 * @return the js
+	 * Gets the document's JavaScript code.
+	 * 
+	 * @return the document's script
 	 */
 	public String getJs() {
 		if(js == "") {
@@ -187,24 +305,46 @@ public class Document {
 		return js;
 	}
 
+    /**
+	 * Gets the document's max age.
+	 * 
+	 * @return the document's max age
+	 */
     public int getMaxage() {
 		return maxage;
 	}
 
+	/**
+	 * Gets the document's max stale.
+	 * 
+	 * @return the document's max stale
+	 */
 	public int getMaxstale() {
 		return maxstale;
 	}
 
+	/**
+	 * Gets the HTTP method used to get the document.
+	 * 
+	 * @return the HTTP method (GET/POST)
+	 */
 	public String getMethod() {
 		return method;
 	}
 
+	/**
+	 * Gets the document's state.
+	 * 
+	 * @return the document's state
+	 */
 	public State getState() {
 		return state;
 	}
 
 	/**
-	 * @return the text
+	 * Gets the VoiceXML document itself.
+	 * 
+	 * @return the VoiceXML document itself
 	 */
 	public String getText() {
 		if(xml == null) {
@@ -214,11 +354,18 @@ public class Document {
 		return xml.toString();
 	}
 
+	/**
+	 * Gets the document's timeout.
+	 * 
+	 * @return the document's timeout
+	 */
 	public int getTimeout() {
 		return timeout;
 	}
 
 	/**
+	 * Gets the document's URL.
+	 * 
 	 * @return the url
 	 */
 	public String getUrl() {
@@ -226,20 +373,48 @@ public class Document {
 	}
 
 	/**
-	 * @return the xml
+	 * Gets the VoiceXML document's root Node.
+	 * 
+	 * @return the VoiceXML document's root Node
 	 */
 	public org.w3c.dom.Node getXML() {
 		return xml;
 	}
 
+	/**
+	 * Parse the VoiceXML document and returns the JavaScript code 
+	 * representation. {@link #setXML(Node)} must be called 
+	 * before this method.
+	 * 
+	 * @return the JavaScript code inside a {@link FastConcatenation} object
+	 */
 	private FastConcatenation parse() {
     	return parse(xml);
     }
 
+	/**
+	 * Parse the node from the VoiceXML document and returns the JavaScript 
+	 * code representation.
+	 * 
+	 * @param node the node to be parsed
+	 * @return the JavaScript code inside a {@link FastConcatenation} object
+	 */
 	private FastConcatenation parse(Node node) {
     	return parse(node, 0);
     }
 	
+	/**
+	 * Parse the node from the VoiceXML document and returns the JavaScript 
+	 * code representation.
+	 * 
+	 * @return the JavaScript code inside a {@link FastConcatenation} object
+	 * 
+	 * @param node the node to be parsed
+	 * @param level the current depth level inside the document tree, it's
+	 *              used to adjust code indentation 
+	 * 
+	 * @return the JavaScript code inside a {@link FastConcatenation} object
+	 */
 	private FastConcatenation parse(Node node,int level) {
 		final NodeList childs = node.getChildNodes();
 		final int n = childs.getLength();
@@ -872,20 +1047,42 @@ public class Document {
 		return fc; 
 	}
 	
+	/**
+	 * Removes a document's listener.
+	 * 
+	 * @param l the document's listener
+	 */
 	public void removeDocumentListener(DocumentListener l) {
 		vecListeners.remove(l);
 	}
 	
+	/**
+	 * Sets the document's state.
+	 * 
+	 * @param state
+	 *            the state
+	 */
 	public void setState(State state) {
 		this.state = state;
 		fireStateChanged(state);
 	}	
 	
+    /**
+	 * Sets the document's XML.
+	 * 
+	 * @param xml the document's XML
+	 */
     public void setXML(Node xml) {
 		this.xml = xml;
 		this.js = "";
 	}	
     
+    /**
+	 * Start tag string representation.
+	 * 
+	 * @param node the node
+	 * @return the start tag string representation
+	 */
     protected FastConcatenation startTag(Node node) {
 		int n = node.getAttributes().getLength();
 		FastConcatenation stbResult = new FastConcatenation(16 * (4 + 5 * n));
