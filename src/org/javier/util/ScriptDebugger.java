@@ -21,9 +21,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
@@ -40,9 +38,10 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 import javax.script.ScriptException;
 
-// TODO: Auto-generated Javadoc
 /**
  * A simple JavaScript debugger
+ * 
+ * @author Edgar Medrano Pérez
  */
 public class ScriptDebugger implements ScriptEngine, Invocable {
 

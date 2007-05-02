@@ -1,3 +1,15 @@
+/**
+ * File:        SAPIOutputHandler.java
+ * Description: An output handler that uses MS SAPI
+ * Author:      Edgar Medrano Pérez
+ *              edgarmedrano at gmail dot com
+ * Created:     2007.04.17
+ * Company:     JAVIER project
+ *              http://javier.sourceforge.net
+ * Notes:       WARNING!
+ *              This class runs only on MS Windows, because
+ *              it relies on MS SAPI in the end  
+ */
 package org.javier.browser.handlers;
 
 import static org.javier.jacob.OleAutomation.createActiveXObject;
@@ -6,11 +18,17 @@ import static org.javier.jacob.SAPI.SpeechAudioFormatType.*;
 import static org.javier.jacob.SAPI.SpeechStreamFileMode.*;
 import static org.javier.jacob.SAPI.SpeechVoiceSpeakFlags.*;
 
-import org.javier.browser.OutputListener;
+import org.javier.browser.event.OutputListener;
 import org.javier.jacob.SAPI.ISpeechObjectTokens;
 import org.javier.jacob.SAPI.SpFileStream;
 import org.javier.jacob.SAPI.SpVoice;
 
+/**
+ * An output handler that uses MS SAPI.
+ * <p><strong>WARNING!</strong><br>
+ * This class runs only on MS Windows, because it relies on MS SAPI in 
+ * the end.</p>
+ */
 public class SAPIOutputHandler implements OutputListener {
 	protected SpVoice spVoice;
 	

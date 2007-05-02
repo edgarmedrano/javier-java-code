@@ -1,3 +1,13 @@
+/**
+ * File:        StreamLogHandler.java
+ * Description: A log handler that uses a Stream to log
+ * Author:      Edgar Medrano Pérez
+ *              edgarmedrano at gmail dot com
+ * Created:     2007.04.15
+ * Company:     JAVIER project
+ *              http://javier.sourceforge.net
+ * Notes:         
+ */
 package org.javier.browser.handlers;
 
 import java.io.File;
@@ -6,7 +16,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
 
-import org.javier.browser.LogListener;
+import org.javier.browser.event.LogListener;
 
 public class StreamLogHandler implements LogListener {
 	protected PrintWriter pw;

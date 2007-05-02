@@ -1,3 +1,13 @@
+/**
+ * File:        SpeechTokenContext.java
+ * Description: SpeechTokenContext from MS SAPI
+ * Author:      Edgar Medrano Pérez
+ *              edgarmedrano at gmail dot com
+ * Created:     2007.04.21
+ * Company:     JAVIER project
+ *              http://javier.sourceforge.net
+ * Notes:        
+ */
 package org.javier.jacob.SAPI;
 
 public interface SpeechTokenContext {

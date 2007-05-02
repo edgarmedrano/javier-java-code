@@ -1,6 +1,6 @@
 /**
  * File:        Dispatchable.java
- * Description: Dispatch getter for OleAutomation objects
+ * Description: Defines OleAutomation's dispatch getter
  * Author:      Edgar Medrano Pérez 
  *              edgarmedrano at gmail dot com
  * Created:     2007.04.17
@@ -17,7 +17,9 @@ import com.jacob.com.Dispatch;
  * or passing it as a parameter
  *   
  * @author Edgar Medrano Pérez
- *
+ * @see OleAutomation#invokeProxyGet(Class, String, Object[])
+ * @see OleAutomation#invokeProxySet(Class, String, Object[])
+ * @see OleAutomation#invokeProxyMethod(Class, String, Object[])
  */
 public interface Dispatchable {
 	@OleProperty Dispatch _GET_JACOB_DISPATCH_();

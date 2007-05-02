@@ -6,7 +6,7 @@
  * Created:     2007.04.21
  * Company:     JAVIER project
  *              http://javier.sourceforge.net
- * Notes:       WARNING!!!!!!
+ * Notes:       WARNING!
  *              This class runs only on MS Windows, because
  *              it relies on MSXML.dll in the end 
  */
@@ -25,9 +25,9 @@ import org.w3c.dom.Node;
 
 /**
  * A network handler that uses {@link MSXMLHTTP}.
- * <p><strong>WARNING!!!!!!<br>
+ * <p><strong>WARNING!</strong><br>
  * This class runs only on MS Windows, because it relies on MSXML.dll in 
- * the end.</strong></p>
+ * the end.</p>
  * 
  * @author Edgar Medrano Pérez
  * @see MSXMLHTTP

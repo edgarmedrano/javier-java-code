@@ -21,7 +21,19 @@
 
 package org.javier.util;
 
+/**
+ * Emulates the JavaScript escape and unescape functions.
+ */
 public class EscapeUnescape {
+	
+	/**
+	 * returns the hexadecimal encoding of an argument in the ISO Latin 
+	 * character set.
+	 * 
+	 * @param src the string to be encoded
+	 * 
+	 * @return the encoded string
+	 */
 	public static String escape(String src) {
 		int i;
 		char j;
@@ -48,6 +60,13 @@ public class EscapeUnescape {
 		return tmp.toString();
 	}
 
+	/**
+	 * returns the ASCII string for the specified hexadecimal encoding value.
+	 * 
+	 * @param src the string to be decoded
+	 * 
+	 * @return the decoded string
+	 */
 	public static String unescape(String src) {
 		StringBuffer tmp = new StringBuffer();
 		tmp.ensureCapacity(src.length());
@@ -80,6 +99,11 @@ public class EscapeUnescape {
 		return tmp.toString();
 	}
 
+	/**
+	 * The main method.
+	 * 
+	 * @param args the commandline arguments
+	 */
 	public static void main(String[] args) {
 		String tmp = "~!@#$%^&*()_+|\\=-,./?><;'][{}\"";
 		System.out.println("testing escape : " + tmp);

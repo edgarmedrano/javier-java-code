@@ -7,7 +7,7 @@
  * Company:     JAVIER project
  *              http://javier.sourceforge.net
  * Notes:       This is based on a previous work named OleAutomation 
- *              by Maikon, but this is optimized for , check 
+ *              by Maikon, but this is optimized for speed, check 
  *              http://sourceforge.net/projects/oleautomation/
  *              for further reference
  */
@@ -24,14 +24,40 @@ import com.jacob.com.DispatchEvents;
 import com.jacob.com.Variant;
 
 /**
+ * OLE Automation implementation with Jacob + annotations.
+ * <p>This is a proxy handler for Ole Automation objects.</p>
+ * 
+ * <p>This is based on a previous work named OleAutomation 
+ *  by Maikon, but this is optimized for speed, check 
+ *  <a href="http://sourceforge.net/projects/oleautomation/" target="_blank">
+ *  OleAutomation project's page</a> for further reference.
+ * 
  * @author Edgar Medrano Pérez
- *
+ * @see Proxy
  */
 public class OleAutomation implements InvocationHandler {
+	
+	/**
+	 * A simple way to join relate a method with a proxy's method's name.
+	 */
 	private static class MethodName {
+		
+		/** The return class. */
 		public Class returnClazz;
+		
+		/** The method. */
 		public Method method;
+		
+		/** The name. */
 		public String name;
+		
+		/**
+		 * Default constructor.
+		 * 
+		 * @param returnClazz the return class
+		 * @param method      the method
+		 * @param name        the method's name
+		 */
 		public MethodName(Class<?> returnClazz
 				, Method method
 				, String name) {
@@ -41,14 +67,31 @@ public class OleAutomation implements InvocationHandler {
 		}
 	}
 	
+	/** Caches all interfaces with their implementation method tables. */
 	protected static Hashtable<Class<?>,Hashtable<Method,MethodName>> htClassImpl;
+	
+	/** Reference to {@link #invokeMethod(Class, String, Object[])} method. */
 	protected static Method methodImpl;
+	
+	/** Reference to {@link #invokeGet(Class, String, Object[])} method. */
 	protected static Method getImpl; 
+	
+	/** Reference to {@link #invokeSet(Class, String, Object[])} method. */
 	protected static Method setImpl;
+	
+	/** Reference to {@link #invokeProxyMethod(Class, String, Object[])} method. */
 	protected static Method proxyMethodImpl;
+	
+	/** Reference to {@link #invokeProxyGet(Class, String, Object[])} method. */
 	protected static Method proxyGetImpl;
+	
+	/** Reference to {@link #invokeProxySet(Class, String, Object[])} method. */
 	protected static Method proxySetImpl;
+	
+	/** Reference to {@link #invokeGetDispatch(Class, String, Object[])} method. */
 	protected static Method getJacobDispatchImpl;
+	
+	/** Map java classes to {@link Variant} types. */
 	protected static Hashtable<Class<?>,Short> htVariantType;
 	static {
 		htClassImpl = new Hashtable<Class<?>,Hashtable<Method,MethodName>>();
@@ -86,6 +129,15 @@ public class OleAutomation implements InvocationHandler {
 		htVariantType.put(Date.class, Variant.VariantDate);
 	}
 	
+	/**
+	 * Creates an ActiveX proxy handler.
+	 * 
+	 * @param clazz the {@link OleInterface} annotated interface
+	 * 
+	 * @return the proxy handler
+	 * 
+	 * @throws IllegalArgumentException
+	 */
 	public static Object createActiveXObject(Class<?> clazz) 
 		throws IllegalArgumentException {
 		return Proxy.newProxyInstance(clazz.getClassLoader()
@@ -93,6 +145,16 @@ public class OleAutomation implements InvocationHandler {
 				, new OleAutomation(clazz));
 	}
 	
+	/**
+	 * Creates an ActiveX proxy handler, using the specified ActiveX dispatch.
+	 * 
+	 * @param disp the ActiveX dispatch
+	 * @param clazz the {@link OleInterface} annotated interface
+	 * 
+	 * @return the proxy handler
+	 * 
+	 * @throws IllegalArgumentException
+	 */
 	public static Object createActiveXObject(Dispatch disp,Class<?> clazz)
 		throws IllegalArgumentException {
 		return Proxy.newProxyInstance(clazz.getClassLoader()
@@ -100,6 +162,13 @@ public class OleAutomation implements InvocationHandler {
 				, new OleAutomation(disp,clazz));
 	}
 	
+	/**
+	 * Gets the implementation method table.
+	 * 
+	 * @param clazz the {@link OleInterface} annotated interface
+	 * 
+	 * @return the implementation method table
+	 */
 	private static Hashtable<Method, MethodName> getClassImpl(Class<?> clazz) {
 		Hashtable<Method, MethodName> impl = htClassImpl.get(clazz);
 		
@@ -117,6 +186,13 @@ public class OleAutomation implements InvocationHandler {
 		return impl;
 	}
 	
+	/**
+	 * Gets the proxy's method that implements the specified method.
+	 * 
+	 * @param method the {@link OleMethod} annotated method
+	 * 
+	 * @return the method implementation
+	 */
 	private static MethodName getMethodImpl(Method method) {
 		Class<?> returnClazz = method.getReturnType();
 		String name = method.getAnnotation(OleMethod.class).name();
@@ -135,6 +211,13 @@ public class OleAutomation implements InvocationHandler {
 		return new MethodName(returnClazz,impl, name);
 	}
 	
+	/**
+	 * Gets the proxy's method that implements the specified getter/setter.
+	 * 
+	 * @param method the {@link OleProperty} annotated getter/setter
+	 * 
+	 * @return the getter/setter implementation
+	 */
 	private static MethodName getPropertyImpl(Method method) {
 		String methodName = method.getName();
 		String popertyName = method.getAnnotation(OleProperty.class).name();
@@ -191,17 +274,42 @@ public class OleAutomation implements InvocationHandler {
 		
 		return new MethodName(returnClazz, impl, popertyName);
 	}
+	
+	/** The ActiveX dispatch. */
 	private Dispatch activeX = null;
+	
+	/** The dispatch event handler. */
 	@SuppressWarnings("unused")
 	private DispatchEvents dispEvents = null;
+	
+	/** 
+	 * The implementation method table. Maps invoked method to proxy hanlder 
+	 * method 
+	 */
 	private Hashtable<Method, MethodName> htImpl = null;
 	
+	/**
+	 * Creates an ActiveX proxy handler instance.
+	 * 
+	 * @param clazz the {@link OleInterface} annotated interface
+	 * 
+	 * @throws IllegalArgumentException
+	 */
 	public OleAutomation(Class<?> clazz)
 		throws IllegalArgumentException {
 		this(new Dispatch(clazz.getAnnotation(OleInterface.class).name())
 			, clazz);
 	}
 	
+	/**
+	 * Creates an ActiveX proxy handler instance, using the specified 
+	 * ActiveX dispatch.
+	 * 
+	 * @param disp  the ActiveX dispatch
+	 * @param clazz the {@link OleInterface} annotated interface
+	 * 
+	 * @throws IllegalArgumentException
+	 */
 	public OleAutomation(Dispatch disp, Class<?> clazz)
 		throws IllegalArgumentException {
 		try {
@@ -226,6 +334,9 @@ public class OleAutomation implements InvocationHandler {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see java.lang.reflect.InvocationHandler#invoke(java.lang.Object, java.lang.reflect.Method, java.lang.Object[])
+	 */
 	public Object invoke(Object proxy, Method method, Object[] args)
 		throws Throwable {
 		MethodName mn = htImpl.get(method);
@@ -249,16 +360,48 @@ public class OleAutomation implements InvocationHandler {
 				, args });
 	}
 	
+	/**
+	 * {@link OleProperty} annotated getter method implementation.
+	 * 
+	 * @param returnClazz the property's class
+	 * @param name        the property's name
+	 * @param args        the property's args (unused)
+	 * 
+	 * @return the property's value
+	 * 
+	 * @throws Exception
+	 */
 	public Object invokeGet(Class<?> returnClazz, String name, Object args[]) 
 		throws Exception {
 		Variant result = Dispatch.get(activeX, name);
 		return variantReturn(result, returnClazz);
 	}
 	
+	/**
+	 * {@link Dispatchable#_GET_JACOB_DISPATCH_()} implementation. 
+	 * 
+	 * @param returnClazz the property's class
+	 * @param name        the property's name
+	 * @param args        the property's arguments (unused)
+	 * 
+	 * @return the ActiveX dispatch
+	 * @see Dispatchable
+	 */
 	public Dispatch invokeGetDispatch(Class<?> returnClazz, String name, Object args[]) {
 		return activeX;
 	}
 	
+	/**
+	 * {@link OleMethod} annotated method implementation.
+	 * 
+	 * @param returnClazz the method's return class
+	 * @param name        the method's name
+	 * @param args        the method's arguments
+	 * 
+	 * @return the method's return value
+	 * 
+	 * @throws Exception
+	 */
 	public Object invokeMethod(Class<?> returnClazz, String name, Object args[]) 
 		throws Exception {
 		Variant result;
@@ -272,12 +415,38 @@ public class OleAutomation implements InvocationHandler {
 		return variantReturn(result,returnClazz);
 	}
 	
+	/**
+	 * {@link OleProperty} annotated getter method implementation. 
+	 * This differs from {@link #invokeGet(Class, String, Object[])} in that
+	 * it returns an {@link OleAutomation} object. 
+	 * 
+	 * @param returnClazz the property's class
+	 * @param name        the property's name
+	 * @param args        the property's args (unused)
+	 * 
+	 * @return the property's value
+	 * 
+	 * @throws Exception
+	 */
 	public Object invokeProxyGet(Class<?> returnClazz, String name, Object args[]) 
 		throws Exception {
 		Dispatch result = Dispatch.get(activeX, name).toDispatch();
 		return OleAutomation.createActiveXObject(result, returnClazz);
 	}
 	
+	/**
+	 * {@link OleMethod} annotated method implementation. 
+	 * This differs from {@link #invokeMethod(Class, String, Object[])} in 
+	 * that it returns an {@link OleAutomation} object. 
+	 * 
+	 * @param returnClazz the method's return class
+	 * @param name        the method's name
+	 * @param args        the method's arguments
+	 * 
+	 * @return the method's return value
+	 * 
+	 * @throws Exception
+	 */
 	public Object invokeProxyMethod(Class<?> returnClazz, String name, Object args[]) 
 		throws Exception {
 		Dispatch result;
@@ -294,17 +463,47 @@ public class OleAutomation implements InvocationHandler {
 		return OleAutomation.createActiveXObject(result, returnClazz);
 	}
 	
+	/**
+	 * {@link OleProperty} annotated setter method implementation. 
+	 * This differs from {@link #invokeSet(Class, String, Object[])} in that
+	 * it takes an {@link OleAutomation} object as argument. 
+	 * 
+	 * @param returnClazz the property's class (unused) 
+	 * @param name        the property's name
+	 * @param args        the property's value 
+	 * 
+	 * @throws Exception
+	 */
 	public void invokeProxySet(Class<?> returnClazz, String name, Object args[]) 
 		throws Exception {
 		Dispatch result = ((Dispatchable) args[0])._GET_JACOB_DISPATCH_();
 		Dispatch.putRef(activeX, name, result);
 	}	
 
+	/**
+	 * {@link OleProperty} annotated setter method implementation. 
+	 * 
+	 * @param returnClazz the property's class (unused) 
+	 * @param name        the property's name
+	 * @param args        the property's value 
+	 * 
+	 * @throws Exception
+	 */
 	public void invokeSet(Class<?> returnClazz, String name, Object args[]) 
 		throws Exception {
 		Dispatch.put(activeX, name, args[0]);
 	}
 	
+	/**
+	 * Transform a Variant object to the specified class.
+	 * 
+	 * @param returnClazz the class of the returned object
+	 * @param v           the object to be transformed
+	 * 
+	 * @return the transformed object 
+	 * 
+	 * @throws Exception
+	 */
 	private Object variantReturn(Variant v, Class<?> returnClazz) 
 		throws Exception {
 		if (v == null || v.isNull()) {
@@ -346,6 +545,4 @@ public class OleAutomation implements InvocationHandler {
 			return v.toDispatch();
 		}
 	}
-	
-
 }

@@ -1,3 +1,14 @@
+/**
+ * File:        JavaDocument.java
+ * Description: DOMDocument wrapper implementing 
+ *              org.w3c.dom.Document interface
+ * Author:      Edgar Medrano Pérez
+ *              edgarmedrano at gmail dot com
+ * Created:     2007.04.22
+ * Company:     JAVIER project
+ *              http://javier.sourceforge.net
+ * Notes:        
+ */
 package org.javier.jacob.MSXML;
 
 import org.w3c.dom.Attr;
@@ -16,7 +27,17 @@ import org.w3c.dom.NodeList;
 import org.w3c.dom.ProcessingInstruction;
 import org.w3c.dom.Text;
 
-public class JavaDocument extends JavaNode implements Document {
+/**
+ * DOMDocument wrapper implementing {@link Document} interface.
+ * <p><b>WARNING!</b><br>
+ * No method is implemented, this class was created to provide a default
+ * implementation for {@link JavaNode#getOwnerDocument()} method.
+ * </p>
+ * @see JavaNode#getOwnerDocument()
+ */
+public class JavaDocument 
+	extends JavaNode 
+	implements Document {
 
 	public JavaDocument(DOMDocument node) {
 		super(node);

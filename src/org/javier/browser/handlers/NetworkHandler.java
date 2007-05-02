@@ -1,6 +1,17 @@
+/**
+ * File:        NetworkHandler.java
+ * Description: Network handler
+ * Author:      Edgar Medrano Pérez
+ *              edgarmedrano at gmail dot com
+ * Created:     2007.04.14
+ * Company:     JAVIER project
+ *              http://javier.sourceforge.net
+ * Notes:        
+ */
 package org.javier.browser.handlers;
 
 import org.javier.browser.Document;
+import org.javier.browser.event.NetworkListener;
 
 public interface NetworkHandler {
 	static final int UNINITIALIZED = 1; 

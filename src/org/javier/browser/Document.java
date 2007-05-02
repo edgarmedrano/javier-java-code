@@ -21,6 +21,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.javier.browser.event.DocumentListener;
 import org.javier.util.EscapeUnescape;
 import org.javier.util.FastConcatenation;
 import org.javier.util.ScriptDebugger;

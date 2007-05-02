@@ -17,6 +17,12 @@ import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
 import org.javier.browser.Document.State;
+import org.javier.browser.event.DocumentListener;
+import org.javier.browser.event.ErrorListener;
+import org.javier.browser.event.JavierListener;
+import org.javier.browser.event.LogListener;
+import org.javier.browser.event.NetworkListener;
+import org.javier.browser.event.OutputListener;
 import org.javier.browser.handlers.ConsoleErrorHandler;
 import org.javier.browser.handlers.ConsoleInputHandler;
 import org.javier.browser.handlers.ConsoleLogHandler;
@@ -24,13 +30,11 @@ import org.javier.browser.handlers.ConsoleOutputHandler;
 import org.javier.browser.handlers.InputHandler;
 import org.javier.browser.handlers.MSXMLHTTPNetworkHandler;
 import org.javier.browser.handlers.NetworkHandler;
-import org.javier.browser.handlers.NetworkListener;
 import org.javier.browser.handlers.SAPIOutputHandler;
 import org.javier.browser.handlers.StreamLogHandler;
 import org.w3c.dom.Node;
 
 
-// TODO: Auto-generated Javadoc
 /**
  * The JAvascript Voicexml InterpretER, this is actually the VoiceXML
  * browser.
@@ -146,7 +150,7 @@ public class Javier
 	 * @param netHandler the network handler
 	 * @param inHandler  the input handler
 	 */
-	Javier(InputHandler inHandler, NetworkHandler netHandler) {
+	public Javier(InputHandler inHandler, NetworkHandler netHandler) {
 		this(inHandler, netHandler, "JavaScript");
 	}
 
@@ -230,12 +234,11 @@ public class Javier
 	}
 	
 	/**
-	 * Comment.
+	 * Reports a comment. This is intended to be called while parsing
+	 * or evaluating the document's code.
 	 * 
-	 * @param message
-	 *            the message
-	 * @param source
-	 *            the source
+	 * @param message the comment
+	 * @param source  the comment's source
 	 */
 	public void comment(Object source, String message) {
 		log(source,message,LogListener.COMMENT);
@@ -249,10 +252,10 @@ public class Javier
 	}
 	
 	/**
-	 * End.
+	 * This method make all the proper calls before ending 
+	 * the document's evaluation. 
 	 * 
-	 * @param endCode
-	 *            the end code
+	 * @param endCode the end code
 	 */
 	public void end(int endCode) {
 		if(endCode != END_CODE_SUCCESS) {
@@ -264,12 +267,11 @@ public class Javier
 	}
 
 	/**
-	 * Error.
+	 * Reports an error message. This is intended to be called while parsing
+	 * or evaluating the document's code.
 	 * 
-	 * @param message
-	 *            the message
-	 * @param source
-	 *            the source
+	 * @param message the message
+	 * @param source  the error's source
 	 */
 	public void error(Object source, String message) {
 		document.setState(State.ERROR);
@@ -285,10 +287,9 @@ public class Javier
 	}
 	
 	/**
-	 * Fire error found.
+	 * Propagates the "error found" event to javier's listeners
 	 * 
-	 * @param description
-	 *            the description
+	 * @param description the error's description
 	 */
 	protected void fireErrorFound(String description) {
 		for(ErrorListener l: vecErrorLs) {
@@ -297,10 +298,9 @@ public class Javier
 	}
 
 	/**
-	 * Fire excecution ended.
+	 * Propagates the "excecution ended" event to javier's listeners.
 	 * 
-	 * @param endCode
-	 *            the end code
+	 * @param endCode the end code
 	 */
 	protected void fireExcecutionEnded(int endCode) {
 		for(JavierListener l: vecJavierLs) {
@@ -309,10 +309,9 @@ public class Javier
 	}
 	
 	/**
-	 * Fire load state changed.
+	 * Propagates the "load state changed" event to javier's listeners.
 	 * 
-	 * @param readyState
-	 *            the ready state
+	 * @param readyState the new ready state
 	 */
 	protected void fireLoadStateChanged(int readyState) {
 		for(JavierListener l: vecJavierLs) {
@@ -321,12 +320,11 @@ public class Javier
 	}
 	
 	/**
-	 * Fire log reported.
+	 * Propagates the "log reported" event to javier's listeners.
 	 * 
-	 * @param level
-	 *            the level
-	 * @param description
-	 *            the description
+	 * @param level        the log level
+	 * @param description  the text to be logged
+	 * @see LogListener
 	 */
 	protected void fireLogReported(String description, int level) {
 		for(LogListener l: vecLogLs) {
@@ -335,10 +333,9 @@ public class Javier
 	}
 	
 	/**
-	 * Fire ouput add text.
+	 * Propagates the "output add text" event to javier's listeners.
 	 * 
-	 * @param text
-	 *            the text
+	 * @param text the text
 	 */
 	protected void fireOuputAddText(String text) {
 		for(OutputListener l: vecOutputLs) {
@@ -347,7 +344,7 @@ public class Javier
 	}
 	
 	/**
-	 * Fire ouput clear text.
+	 * Propagates the "ouput clear text" event to javier's listeners.
 	 */
 	protected void fireOuputClearText() {
 		for(OutputListener l: vecOutputLs) {
@@ -356,7 +353,7 @@ public class Javier
 	}
     
 	/**
-	 * Fire ouput wait until done.
+	 * Propagates the "ouput wait until done" event to javier's listeners.
 	 */
 	protected void fireOuputWaitUntilDone() {
 		for(OutputListener l: vecOutputLs) {
@@ -365,10 +362,9 @@ public class Javier
 	}
     
 	/**
-	 * Fire url changed.
+	 * Propagates the "url changed" event to javier's listeners.
 	 * 
-	 * @param url
-	 *            the url
+	 * @param url the new url
 	 */
 	protected void fireUrlChanged(String url) {
 		for(JavierListener l: vecJavierLs) {
@@ -379,24 +375,20 @@ public class Javier
 	/**
 	 * Gets the input.
 	 * 
-	 * @param text
-	 *            the text
-	 * 
-	 * @return the input
+	 * @param text the text used to prompt
+	 * @return the captured input
 	 */
 	public String getInput(String text) {
 		return getInput(text,"");
 	}
 
 	/**
-	 * Gets the input.
+	 * Gets the input. This is intended to be called while evaluating
+	 * the document's code.
 	 * 
-	 * @param text
-	 *            the text
-	 * @param value
-	 *            the value
-	 * 
-	 * @return the input
+	 * @param text the text to be used while prompting
+	 * @param value the default value
+	 * @return the captured input
 	 */
 	public String getInput(String text,String value) {
 		String result = inHandler.getInput(text,value);
@@ -405,21 +397,19 @@ public class Javier
 	}
 	
 	/**
-	 * Checks if is auto eval.
+	 * Checks if auto evaluation is turned on.
 	 * 
-	 * @return true, if is auto eval
+	 * @return <code>true</code>, if auto evaluation is turned on
 	 */
 	public boolean isAutoEval() {
 		return autoEval;
 	}
 
 	/**
-	 * Load.
+	 * Load the specified document.
 	 * 
-	 * @param docRef
-	 *            the doc ref
-	 * 
-	 * @return true, if load
+	 * @param docRef the document
+	 * @return <code>true</code>, if load is successfully set
 	 */
 	public boolean load(Document docRef) {
 		if(!docRef.getUrl().equals("")) {
@@ -442,26 +432,23 @@ public class Javier
 	}
 	
 	/**
-	 * Load.
+	 * Loads a document from the specified URL.
 	 * 
-	 * @param docURL
-	 *            the doc URL
+	 * @param docURL the document's URL
 	 * 
-	 * @return true, if load
+	 * @return <code>true</code>, if load is successfully set
 	 */
 	public boolean load(String docURL) {
 		return load(new Document(docURL));
 	}
 
 	/**
-	 * Log.
+	 * Log a text message.
 	 * 
-	 * @param text
-	 *            the text
-	 * @param level
-	 *            the level
-	 * @param source
-	 *            the source
+	 * @param text the text message
+	 * @param level the level
+	 * @param source the object reporting the text message
+	 * @see LogListener           
 	 */
 	public void log(Object source, String text,int level) {
 		if(level <= maxlogLevel) {
@@ -470,9 +457,13 @@ public class Javier
 	}
 
 	/**
-	 * Main loop.
+	 * This is the main loop, which starts the VoiceXML document 
+	 * interpretation. It will end when the last document do not 
+	 * return a document or the disconnect instruction is evaluated.
+	 * The {@link #document} field must be set before calling this method.
 	 * 
-	 * @return the int
+	 * @return the end code
+	 * @see #end(int)
 	 */
 	public int mainLoop() {
 		for(;;) {
@@ -496,25 +487,29 @@ public class Javier
 	}
 	
 	/**
-	 * Main loop.
+	 * This is the main loop, which starts the VoiceXML document 
+	 * interpretation. It will end when the last document do not 
+	 * return a document or the disconnect instruction is evaluated.
 	 * 
-	 * @param homeDocument
-	 *            the home document
+	 * @param home the home document
 	 * 
-	 * @return the int
+	 * @return the end code
+	 * @see #end(int)
 	 */
-	public int mainLoop(Document homeDocument) {
-		this.document = homeDocument;
+	public int mainLoop(Document home) {
+		this.document = home;
 		return mainLoop();
 	}
 	
 	/**
-	 * Main loop.
+	 * This is the main loop, which starts the VoiceXML document 
+	 * interpretation. It will end when the last document do not 
+	 * return a document or the disconnect instruction is evaluated.
 	 * 
-	 * @param homeURL
-	 *            the home URL
+	 * @param homeURL the home document's URL
 	 * 
-	 * @return the int
+	 * @return the end code
+	 * @see #end(int)
 	 */
 	public int mainLoop(String homeURL) {
 		return mainLoop(new Document(homeURL));
@@ -523,8 +518,7 @@ public class Javier
 	/**
 	 * Process.
 	 * 
-	 * @param result
-	 *            the result
+	 * @param result the result
 	 */
 	private void process(Object result) {
 		document.setState(State.LOADED);
@@ -552,47 +546,46 @@ public class Javier
 	}
 	
 	/**
-	 * Removes the error listener.
+	 * Removes an error listener.
 	 * 
-	 * @param l
-	 *            the l
+	 * @param l the listener to be removed
 	 */
 	public void removeErrorListener(ErrorListener l) {
 		vecErrorLs.remove(l);
 	}
 	
 	/**
-	 * Removes the javier listener.
+	 * Removes a javier listener.
 	 * 
-	 * @param l
-	 *            the l
+	 * @param l the listener to be removed
 	 */
 	public void removeJavierListener(JavierListener l) {
 		vecJavierLs.remove(l);
 	}
 	
 	/**
-	 * Removes the log listener.
+	 * Removes a log listener.
 	 * 
-	 * @param l
-	 *            the l
+	 * @param l the listener to be removed
 	 */
 	public void removeLogListener(LogListener l) {
 		vecLogLs.remove(l);
 	}
 
 	/**
-	 * Removes the output listener.
+	 * Removes an output listener.
 	 * 
-	 * @param l
-	 *            the l
+	 * @param l the listener to be removed
 	 */
 	public void removeOutputListener(OutputListener l) {
 		vecOutputLs.remove(l);
 	}
 
 	/**
-	 * Run.
+	 * Executes the current document. If {@link #autoEval} is 
+	 * <code>false</code>, you must call this method to execute the document. 
+	 * 
+	 * @see #document
 	 */
 	protected void run() {
 		try {
@@ -611,10 +604,10 @@ public class Javier
 	}
 
 	/**
-	 * Sets the auto eval.
+	 * Sets the auto evaluation flag. If autoEval is <code>true</code> the 
+	 * document will be executed as soon as it's loaded. 
 	 * 
-	 * @param autoEval
-	 *            the auto eval
+	 * @param autoEval the auto evaluation flag
 	 */
 	public void setAutoEval(boolean autoEval) {
 		this.autoEval = autoEval;
@@ -628,12 +621,11 @@ public class Javier
 	}
 
 	/**
-	 * Verbose.
+	 * Reports a verbose message. This is intended to be called while parsing
+	 * or evaluating the document's code.
 	 * 
-	 * @param message
-	 *            the message
-	 * @param source
-	 *            the source
+	 * @param message the verbose message
+	 * @param source  the object reporting the verbose message
 	 */
 	public void verbose(Object source, String message) {
 		log(source,message,LogListener.VERBOSE);
@@ -647,12 +639,11 @@ public class Javier
 	}
 
 	/**
-	 * Warning.
+	 * Reports a warning message. This is intended to be called while parsing
+	 * or evaluating the document's code.
 	 * 
-	 * @param message
-	 *            the message
-	 * @param source
-	 *            the source
+	 * @param message the warning message
+	 * @param source  the object reporting the warning message
 	 */
 	public void warning(Object source, String message) {
 		log(source,message,LogListener.WARNING);
