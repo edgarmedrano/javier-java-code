@@ -174,8 +174,9 @@ AgiServer:
 
 		<AGIServer 
 			name="master"
-			processorClass="com.orderlysoftware.orderlycalls.examples.OrderlyQExample">
+			processorClass="org.javier.orderly.AGIHandler">
 		<!-- 
+			processorClass="com.orderlysoftware.orderlycalls.examples.OrderlyQExample">
 		Bind:
 		For each AGIServer you may specify a list of 
 		IP addresses/domains and ports to bind.
