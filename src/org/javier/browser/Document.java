@@ -126,7 +126,7 @@ public class Document {
 	public Document(String url) {
 		this(url,"GET","",0,0,0);
 		state = State.CREATED;
-		seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"), false);
+		seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"), true);
 	}
 		
 	/**

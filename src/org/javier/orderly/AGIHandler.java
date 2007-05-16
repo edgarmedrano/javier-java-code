@@ -18,6 +18,9 @@ import static org.javier.jacob.SAPI.SpeechVoiceSpeakFlags.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.javier.browser.Javier;
 import org.javier.browser.event.JavierListener;
 import org.javier.browser.event.OutputListener;
@@ -38,14 +41,13 @@ public class AGIHandler
 	implements AGIReusableProcessor,
 	  JavierListener,
 	  InputHandler,
-	  OutputListener
+	  OutputListener,
+	  Thread.UncaughtExceptionHandler
 	  {
 
 	private AGIConnection agi;
 	private Javier javier;
-	private Thread agiThread;
 	private Thread javierThread;
-	private volatile boolean javierIsWaiting;
 	private boolean exitWaitLoop;
 	private static int file_index;
 	private SpVoice ttsVoice;
@@ -59,52 +61,58 @@ public class AGIHandler
 	 * @see com.orderlysoftware.orderlycalls.asterisk.agi.AGIProcessor#processCall(com.orderlysoftware.orderlycalls.asterisk.agi.AGIConnection)
 	 */
 	public void processCall(AGIConnection agi) throws IOException {
+		final AGIHandler selfRef = this;
 		this.agi = agi;
 		//HashMap properties = agi.getAGIProperties();
-		
-		ttsVoice = (SpVoice) createActiveXObject(SpVoice.class);
-		ISpeechObjectTokens voices = ttsVoice.GetVoices();
-		
-		for(int i = 0; i < voices.Count(); i++) {
-			if(voices.Item(i).GetDescription().indexOf("Rosa") >= 0) {
-				ttsVoice.setVoice(voices.Item(i));
-				break;
-			}
-		}
-		
-		javier = new Javier(this,new MSXMLHTTPNetworkHandler());
-		javier.addJavierListener(this);
-		javier.addOutputListener(this);
-		
-		try {
-			javier.addLogListener(new StreamLogHandler("Javier.log"));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
 	
-		agiThread = Thread.currentThread();
 		javierThread = new Thread(new Runnable() {
 				public void run() {
+					javier = new Javier(selfRef,new MSXMLHTTPNetworkHandler());
+					javier.addJavierListener(selfRef);
+					javier.addOutputListener(selfRef);
+					
+					try {
+						javier.addLogListener(new StreamLogHandler("Javier.log"));
+					} catch (FileNotFoundException e) {
+						e.printStackTrace();
+					}
+					
+					ttsVoice = (SpVoice) createActiveXObject(SpVoice.class);
+					ISpeechObjectTokens voices = ttsVoice.GetVoices();
+					
+					for(int i = 0; i < voices.Count(); i++) {
+						if(voices.Item(i).GetDescription().indexOf("Rosa") >= 0) {
+							ttsVoice.setVoice(voices.Item(i));
+							break;
+						}
+					}
+					
 					javier.mainLoop("http://localhost/sictel.php");
 				}
 			});
-		
+		javierThread.setUncaughtExceptionHandler(this);
 		javierThread.start();
+		
 		for(;;) {
-			if(javierIsWaiting) {
-				javierThread.notify();
-				try {
-					agiThread.wait();
-				} catch (InterruptedException e) {
-					exitWaitLoop = true;
-				}
-			}
 			if(exitWaitLoop) {
 				break;
 			}
-			agi.exec("WAIT", "1");
+			
+			Thread.yield();
+			
+			try {
+				if(agiWait(1) < 0) {
+					break;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		System.out.println("Succesfully end!");
+	}
+
+	private synchronized int agiWait(int i) throws NumberFormatException, IOException {
+		return Integer.valueOf(agi.exec("WAIT", "1"));
 	}
 
 	/**
@@ -149,29 +157,20 @@ public class AGIHandler
 	 */
 	public String getInput(String text, String value) {
 		String result = value;
-		waitForAGI();
+		
 		try {
-			buffer += agi.getData("beep", 60000);
+			buffer += agiGetData("beep", 60000);
 			result = buffer;
 			buffer = "";
-		} catch (IOException e) {
+		} catch (Exception e) {
 			exitWaitLoop = true;
 		}
-		agiThread.notify();
+		
 		return result;
 	}
 
-	/**
-	 * Wait for AGI thread to be ready.
-	 */
-	private void waitForAGI() {
-		try {
-			javierIsWaiting = true;
-			javierThread.wait();
-		} catch (InterruptedException e) {
-			// do nothing
-		}
-		javierIsWaiting = false;
+	private synchronized String agiGetData(String string, long i) throws IOException {
+		return agi.getData(string, i);
 	}
 
 	/**
@@ -187,18 +186,20 @@ public class AGIHandler
 		if(file == null) {
 			exitWaitLoop = true;
 		} else {
-			waitForAGI();
 			try {
-				result = agi.streamFile(file,"0123456789");
-			} catch (IOException e) {
+				result = agiStreamFile(file,"0123456789");
+			} catch (Exception e) {
 				exitWaitLoop = true;
 			}
-			agiThread.notify();
 		}
 		
 		if(result > 0) {
 			buffer += new String(new char[] { (char)result });
 		}
+	}
+
+	private synchronized int agiStreamFile(String file, String string) throws IOException {
+		return agi.streamFile(file, string);
 	}
 
 	private String textToWav(String text) {
@@ -216,7 +217,7 @@ public class AGIHandler
 		do {
 			fileName = "javier" + getFileIndex();
 			wavPath = "" + fileName + ".wav";
-			gsmPath = "C:\\cygroot\\asterisk\\var\\lib\\sounds" + fileName + ".gsm";
+			gsmPath = "C:\\cygroot\\asterisk\\var\\lib\\sounds\\" + fileName + ".gsm";
 			wavFile = new File(wavPath);
 			gsmFile = new File(gsmPath);
 		} while(wavFile.exists() || gsmFile.exists());
@@ -266,4 +267,7 @@ public class AGIHandler
 		// do nothing
 	}
 
+	public void uncaughtException(Thread t, Throwable e) {
+		exitWaitLoop = true;
+	}
 }
