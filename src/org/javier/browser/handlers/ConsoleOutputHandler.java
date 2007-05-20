@@ -15,9 +15,17 @@ import java.io.PrintWriter;
 
 import org.javier.browser.event.OutputListener;
 
+/**
+ * Output prompts to console.
+ */
 public class ConsoleOutputHandler implements OutputListener {
+	
+	/** The pw. */
 	protected PrintWriter pw;
 
+	/**
+	 * The Constructor.
+	 */
 	public ConsoleOutputHandler() {
 		Console console = System.console();
 		
@@ -28,14 +36,23 @@ public class ConsoleOutputHandler implements OutputListener {
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.javier.browser.event.OutputListener#addText(java.lang.String)
+	 */
 	public void addText(String text) {
 		pw.println(text);
 	}
 
+	/* (non-Javadoc)
+	 * @see org.javier.browser.event.OutputListener#clearText()
+	 */
 	public void clearText() {
 		/*do nothing*/
 	}
 
+	/* (non-Javadoc)
+	 * @see org.javier.browser.event.OutputListener#waitUntilDone()
+	 */
 	public void waitUntilDone() {
 		/*do nothing*/
 	}

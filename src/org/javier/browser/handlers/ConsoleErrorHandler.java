@@ -15,9 +15,17 @@ import java.io.PrintWriter;
 
 import org.javier.browser.event.ErrorListener;
 
+/**
+ * Output error messages to console.
+ */
 public class ConsoleErrorHandler implements ErrorListener {
+	
+	/** The pw. */
 	protected PrintWriter pw;
 
+	/**
+	 * The Constructor.
+	 */
 	public ConsoleErrorHandler() {
 		Console console = System.console();
 		
@@ -29,6 +37,9 @@ public class ConsoleErrorHandler implements ErrorListener {
 		
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.javier.browser.event.ErrorListener#errorFound(java.lang.String)
+	 */
 	public void errorFound(String description) {
 		pw.println(description);
 	}

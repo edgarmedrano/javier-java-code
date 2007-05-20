@@ -32,6 +32,17 @@ import com.jacob.com.Variant;
  *  <a href="http://sourceforge.net/projects/oleautomation/" target="_blank">
  *  OleAutomation project's page</a> for further reference.
  * 
+ * <p><i>Usage:</i>
+ * <pre>import static org.javier.jacob.OleAutomation.createActiveXObject;
+ * import org.javier.jacob.SAPI.SpVoice;
+ * 
+ * ...
+ * 
+ * SpVoice spVoice = (SpVoice) createActiveXObject(SpVoice.class);</pre></p>
+ * @see OleInterface
+ * @see OleMethod
+ * @see OleProperty
+ * 
  * @author Edgar Medrano Pérez
  * @see Proxy
  */

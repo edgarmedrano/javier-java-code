@@ -8,7 +8,7 @@
  *              http://javier.sourceforge.net
  * Notes:        
  */
-package org.javier.orderly;
+package org.javier.agi;
 
 import static org.javier.jacob.OleAutomation.createActiveXObject;
 import static org.javier.jacob.SAPI.SpeechAudioFormatType.*;
@@ -18,9 +18,6 @@ import static org.javier.jacob.SAPI.SpeechVoiceSpeakFlags.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
 import org.javier.browser.Javier;
 import org.javier.browser.event.JavierListener;
 import org.javier.browser.event.OutputListener;
@@ -31,14 +28,11 @@ import org.javier.jacob.SAPI.ISpeechObjectTokens;
 import org.javier.jacob.SAPI.SpFileStream;
 import org.javier.jacob.SAPI.SpVoice;
 
-import com.orderlysoftware.orderlycalls.asterisk.agi.AGIConnection;
-import com.orderlysoftware.orderlycalls.asterisk.agi.AGIReusableProcessor;
-
 /**
  * AGI Input/Output handler
  */
 public class AGIHandler 
-	implements AGIReusableProcessor,
+	implements AGIScript,
 	  JavierListener,
 	  InputHandler,
 	  OutputListener,
@@ -60,7 +54,7 @@ public class AGIHandler
 	/* (non-Javadoc)
 	 * @see com.orderlysoftware.orderlycalls.asterisk.agi.AGIProcessor#processCall(com.orderlysoftware.orderlycalls.asterisk.agi.AGIConnection)
 	 */
-	public void processCall(AGIConnection agi) throws IOException {
+	public void execute(AGIConnection agi) {
 		final AGIHandler selfRef = this;
 		this.agi = agi;
 		//HashMap properties = agi.getAGIProperties();
@@ -101,7 +95,7 @@ public class AGIHandler
 			Thread.yield();
 			
 			try {
-				if(agiWait(1) < 0) {
+				if(Integer.valueOf(agi.appexec("WAIT", "1")) < 0) {
 					break;
 				}
 			} catch (Exception e) {
@@ -109,10 +103,6 @@ public class AGIHandler
 			}
 		}
 		System.out.println("Succesfully end!");
-	}
-
-	private synchronized int agiWait(int i) throws NumberFormatException, IOException {
-		return Integer.valueOf(agi.exec("WAIT", "1"));
 	}
 
 	/**
@@ -159,7 +149,7 @@ public class AGIHandler
 		String result = value;
 		
 		try {
-			buffer += agiGetData("beep", 60000);
+			buffer += agi.get_data("beep", 60000);
 			result = buffer;
 			buffer = "";
 		} catch (Exception e) {
@@ -169,9 +159,6 @@ public class AGIHandler
 		return result;
 	}
 
-	private synchronized String agiGetData(String string, long i) throws IOException {
-		return agi.getData(string, i);
-	}
 
 	/**
 	 * Adds the text.
@@ -187,7 +174,7 @@ public class AGIHandler
 			exitWaitLoop = true;
 		} else {
 			try {
-				result = agiStreamFile(file,"0123456789");
+				result = Integer.valueOf(agi.stream_file(file,"0123456789"));
 			} catch (Exception e) {
 				exitWaitLoop = true;
 			}
@@ -196,10 +183,6 @@ public class AGIHandler
 		if(result > 0) {
 			buffer += new String(new char[] { (char)result });
 		}
-	}
-
-	private synchronized int agiStreamFile(String file, String string) throws IOException {
-		return agi.streamFile(file, string);
 	}
 
 	private String textToWav(String text) {

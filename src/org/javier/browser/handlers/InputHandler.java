@@ -1,6 +1,6 @@
 /**
  * File:        InputHandler.java
- * Description: Input handler
+ * Description: The Input Handler Interface
  * Author:      Edgar Medrano Pérez
  *              edgarmedrano at gmail dot com
  * Created:     2007.04.15

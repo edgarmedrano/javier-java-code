@@ -15,10 +15,20 @@ import java.io.PrintWriter;
 
 import org.javier.browser.event.LogListener;
 
+/**
+ * Log messages to console.
+ */
 public class ConsoleLogHandler implements LogListener {
+	
+	/** The pw. */
 	PrintWriter pw;
+	
+	/** The console. */
 	protected Console console = System.console();
 
+	/**
+	 * The Constructor.
+	 */
 	public ConsoleLogHandler() {
 		Console console = System.console();
 		
@@ -29,6 +39,9 @@ public class ConsoleLogHandler implements LogListener {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see org.javier.browser.event.LogListener#logReported(java.lang.String, int)
+	 */
 	public void logReported(String description, int level) {
 		pw.println(description);
 	}

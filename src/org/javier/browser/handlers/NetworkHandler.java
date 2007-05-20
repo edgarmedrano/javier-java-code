@@ -1,6 +1,6 @@
 /**
  * File:        NetworkHandler.java
- * Description: Network handler
+ * Description: The Network Handler Interface
  * Author:      Edgar Medrano Pérez
  *              edgarmedrano at gmail dot com
  * Created:     2007.04.14

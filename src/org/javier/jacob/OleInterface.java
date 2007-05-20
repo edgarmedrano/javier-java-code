@@ -16,6 +16,12 @@ import java.lang.annotation.Target;
 
 /**
  * Annotates an interface to link them to OleAutomation proxies.
+ * <p><i>Usage:</i>
+ * <pre>import org.javier.jacob.OleInterface;
+ * 
+ * &#064;OleInterface(name="Sapi.SpVoice")
+ * public interface SpVoice extends Dispatchable {
+ *  ...</p>
  * @see OleAutomation 
  * @author Maikon
  */

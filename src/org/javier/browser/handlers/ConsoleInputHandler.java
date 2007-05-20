@@ -17,6 +17,9 @@ import java.io.InputStreamReader;
 
 import org.javier.browser.handlers.InputHandler;
 
+/**
+ * Get input from console.
+ */
 public class ConsoleInputHandler implements InputHandler {
 	protected Console console = System.console();
 	protected BufferedReader br;
