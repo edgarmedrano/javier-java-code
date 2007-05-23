@@ -71,6 +71,8 @@ public class AGIService {
 		/** The script. */
 		protected AGIScript script;
 
+		private AGIConnection agi;
+
 		/**
 		 * The Constructor.
 		 * 
@@ -85,11 +87,21 @@ public class AGIService {
 		 *             the illegal access exception
 		 * @throws InstantiationException
 		 *             the instantiation exception
+		 * @throws IOException 
 		 */
 		public Handler(Socket socket) throws IllegalArgumentException,
 				InstantiationException, IllegalAccessException,
-				InvocationTargetException {
+				InvocationTargetException, IOException {
 			this.socket = socket;
+			try {
+				agi = new AGIConnection(socket.getInputStream(),socket.getOutputStream(), System.err);
+			} catch (AGIException e) {
+				socket.close();
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			script = (AGIScript) handlerConstructor.newInstance();
 		}
 
@@ -97,11 +109,10 @@ public class AGIService {
 		 * @see java.lang.Runnable#run()
 		 */
 		public void run() {
+			script.execute(agi);
+			agi.close();
 			try {
-				script.execute(new AGIConnection(socket.getInputStream(),
-						socket.getOutputStream(), System.err));
-			} catch (AGIException e) {
-				e.printStackTrace();
+				socket.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

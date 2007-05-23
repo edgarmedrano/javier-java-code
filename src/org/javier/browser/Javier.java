@@ -144,6 +144,8 @@ public class Javier
 	/** The execution end code. */
 	private int endCode;
 	
+	private boolean exitMainLoop = false;
+	
 	/**
 	 * Creates a browser without output interaction.
 	 * 
@@ -264,6 +266,7 @@ public class Javier
 		this.endCode = endCode;
 		fireOuputWaitUntilDone();
 		fireExcecutionEnded(endCode);
+		exitMainLoop = true;
 	}
 
 	/**
@@ -466,7 +469,8 @@ public class Javier
 	 * @see #end(int)
 	 */
 	public int mainLoop() {
-		for(;;) {
+		exitMainLoop = false;
+		while(!exitMainLoop) {
 			if(document.getState() == State.CREATED) {
 				load(document);
 			}
@@ -591,7 +595,6 @@ public class Javier
 		try {
 			document = document.execute(this);
 		} catch(Exception e) {
-			e.printStackTrace();
 			if(e.getMessage().equals("error")
 				|| e.getMessage().equals("exit")
 				|| e.getMessage().equals("telephone.disconnect")) {

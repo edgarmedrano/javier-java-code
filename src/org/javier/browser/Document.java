@@ -13,6 +13,8 @@ package org.javier.browser;
 
 import java.util.Hashtable;
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.script.Bindings;
 import javax.script.Invocable;
@@ -62,6 +64,9 @@ public class Document {
 	 * evaluate documents.
 	 */
 	static protected final ScriptEngineManager sem = new ScriptEngineManager();
+	
+	/** Regular expresion to extract the JavaScript exception. */
+	static protected final Pattern re_excep = Pattern.compile("(\\w+)?:\\s*(.*)\\s*\\(.*\\).*");
 	
 	/** Maps the tag names to {@link Tag} enum. */
 	static protected final Hashtable<String, Tag> htTagEnum 
@@ -126,7 +131,8 @@ public class Document {
 	public Document(String url) {
 		this(url,"GET","",0,0,0);
 		state = State.CREATED;
-		seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"), true);
+		//seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"), false);
+		seJavaScript = sem.getEngineByName("JavaScript");
 	}
 		
 	/**
@@ -219,7 +225,17 @@ public class Document {
 			nextDoc = invocableEngine.invokeFunction("aDocument","x");
 			setState(State.EXECUTED);
 		} catch(ScriptException e) {
-			e.printStackTrace();
+			Matcher matcher = re_excep.matcher(e.getMessage());
+			if(matcher.find()) {
+				if(matcher.groupCount() >= 2) {
+					throw(new ScriptException(matcher.group(2).trim()));
+				} 
+				if(matcher.groupCount() >= 1) {
+					throw(new ScriptException(matcher.group(1).trim()));
+				} 
+			}
+			
+			throw(e);
 		}
 		if(nextDoc instanceof String) {
 			nextDoc = new Document((String) nextDoc);

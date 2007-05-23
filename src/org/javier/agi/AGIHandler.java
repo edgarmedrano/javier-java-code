@@ -122,7 +122,7 @@ public class AGIHandler
 	 *            the ready state
 	 */
 	public void loadStateChanged(int readyState) {
-		// TODO Auto-generated method stub
+		// do nothing
 	}
 
 	/**
@@ -132,7 +132,7 @@ public class AGIHandler
 	 *            the url
 	 */
 	public void urlChanged(String url) {
-		// TODO Auto-generated method stub
+		// do nothing
 	}
 
 	/**
@@ -154,6 +154,7 @@ public class AGIHandler
 			buffer = "";
 		} catch (Exception e) {
 			exitWaitLoop = true;
+			e.printStackTrace();
 		}
 		
 		return result;
@@ -168,21 +169,23 @@ public class AGIHandler
 	 */
 	public void addText(String text) {
 		String file = textToWav(text);
-		int result = 0;
+		/*String result = "";*/
 		
 		if(file == null) {
 			exitWaitLoop = true;
 		} else {
 			try {
-				result = Integer.valueOf(agi.stream_file(file,"0123456789"));
+				buffer += agi.stream_file(file,"0123456789");
 			} catch (Exception e) {
+				e.printStackTrace();
 				exitWaitLoop = true;
 			}
 		}
-		
-		if(result > 0) {
-			buffer += new String(new char[] { (char)result });
+		/*
+		if(!result.equals("")) {
+			buffer += new String(new char[] { (char)(int)Integer.valueOf(result) });
 		}
+		*/
 	}
 
 	private String textToWav(String text) {
@@ -251,6 +254,7 @@ public class AGIHandler
 	}
 
 	public void uncaughtException(Thread t, Throwable e) {
-		exitWaitLoop = true;
+		e.printStackTrace();
+		exitWaitLoop = true;	
 	}
 }

@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.Hashtable;
@@ -93,29 +92,36 @@ public class AGIConnection {
 	
 	/** The properties. */
 	protected Properties properties;
+
+	/** The in stream. */
+	private InputStream inStream;
+	
+	/** The out stream. */
+	private OutputStream outStream;
+	
+	/** The err stream. */
+	private OutputStream errStream;
 	
 	/**
-	 * @param err the error output stream
-	 * @param in  the input stream
-	 * @param out the output stream
+	 * The Constructor.
 	 * 
-	 * @throws AGIException if a communication error take place
-	 */
-	public AGIConnection(InputStream in, PrintStream out, PrintStream err) throws AGIException {
-		this(in,(OutputStream)out,(OutputStream)err);
-	}
-	
-	/**
-	 * @param err the error output stream
-	 * @param in  the input stream
-	 * @param out the output stream
+	 * @param err
+	 *            the error output stream
+	 * @param in
+	 *            the input stream
+	 * @param out
+	 *            the output stream
 	 * 
-	 * @throws AGIException if a communication error take place
+	 * @throws AGIException
+	 *             if a communication error take place
 	 */
 	public AGIConnection(InputStream in, OutputStream out, OutputStream err) throws AGIException {
-		this.in = new BufferedReader(new InputStreamReader(in));
-		this.out = out;
-		this.err = new PrintWriter(err);
+		inStream = in;
+		outStream = out;
+		errStream = err;
+		this.in = new BufferedReader(new InputStreamReader(inStream));
+		this.out = outStream;
+		this.err = new PrintWriter(errStream);
 		
 		//_got_sighup = false;
 		//signal.signal(signal.SIGHUP, _handle_sighup)  // handle SIGHUP
@@ -289,6 +295,33 @@ public class AGIConnection {
 		}
 
         return Integer.valueOf(result.get("result")[0]);
+	}
+	
+	/**
+	 * Close I/O and error streams.
+	 */
+	public void close() {
+		if(!System.in.equals(inStream)) {
+			try {
+				in.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		if(!System.out.equals(outStream)) {
+			try {
+				out.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		if(!System.err.equals(errStream)) {
+			try {
+				in.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	/**
