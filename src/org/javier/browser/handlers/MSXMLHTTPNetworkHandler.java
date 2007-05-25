@@ -37,7 +37,7 @@ public class MSXMLHTTPNetworkHandler
 	implements Runnable {
 	protected MSXMLHTTP xmlhttp;
 	private DocType dt;
-	private Thread timer;
+	//private Thread timer;
 	private int timeout;
 	
 	public MSXMLHTTPNetworkHandler() {
@@ -112,8 +112,10 @@ public class MSXMLHTTPNetworkHandler
 			xmlhttp.setRequestHeader("Cache-Control","max-stale=" + maxStale);		
 		}
 		
+		/*
 		timer = new Thread(this);
 		timer.start();
+		*/
 		
 	    if (urlParts.length > 1) {
 		   xmlhttp.send(urlParts[1]);
@@ -121,6 +123,9 @@ public class MSXMLHTTPNetworkHandler
 	       xmlhttp.send();
 		} 
 		
+	    /*Running here instead of a thread*/
+	    run();
+	    
 		return true;
 	}
 
@@ -174,6 +179,6 @@ public class MSXMLHTTPNetworkHandler
 			}
 			readyStateChange();
 		}
-		timer = null;
+		//timer = null;
 	}
 }

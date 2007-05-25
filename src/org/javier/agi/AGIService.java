@@ -15,6 +15,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -116,6 +117,7 @@ public class AGIService {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+			/**/
 		}
 	}
 
@@ -192,7 +194,9 @@ public class AGIService {
 		try {
 			for (;;) {
 				try {
-					pool.execute(new Handler(serverSocket.accept()));
+					System.out.println("ACCEPT");
+					new Thread(new Handler(serverSocket.accept())).start();
+					//pool.execute(new Handler(serverSocket.accept()));
 				} catch (IllegalArgumentException e) {
 					e.printStackTrace();
 				} catch (InstantiationException e) {

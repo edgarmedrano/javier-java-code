@@ -40,7 +40,6 @@ public class AGIHandler
 	  {
 
 	private AGIConnection agi;
-	private Javier javier;
 	private Thread javierThread;
 	private boolean exitWaitLoop;
 	private static int file_index;
@@ -60,28 +59,32 @@ public class AGIHandler
 		//HashMap properties = agi.getAGIProperties();
 	
 		javierThread = new Thread(new Runnable() {
+				private Javier javier = null;
 				public void run() {
-					javier = new Javier(selfRef,new MSXMLHTTPNetworkHandler());
-					javier.addJavierListener(selfRef);
-					javier.addOutputListener(selfRef);
-					
-					try {
-						javier.addLogListener(new StreamLogHandler("Javier.log"));
-					} catch (FileNotFoundException e) {
-						e.printStackTrace();
-					}
-					
-					ttsVoice = (SpVoice) createActiveXObject(SpVoice.class);
-					ISpeechObjectTokens voices = ttsVoice.GetVoices();
-					
-					for(int i = 0; i < voices.Count(); i++) {
-						if(voices.Item(i).GetDescription().indexOf("Rosa") >= 0) {
-							ttsVoice.setVoice(voices.Item(i));
-							break;
+					if(javier == null) {
+						javier = new Javier(selfRef,new MSXMLHTTPNetworkHandler());
+						javier.addJavierListener(selfRef);
+						javier.addOutputListener(selfRef);
+						
+						try {
+							javier.addLogListener(new StreamLogHandler("Javier.log"));
+						} catch (FileNotFoundException e) {
+							e.printStackTrace();
+						}
+						
+						ttsVoice = (SpVoice) createActiveXObject(SpVoice.class);
+						ISpeechObjectTokens voices = ttsVoice.GetVoices();
+						
+						for(int i = 0; i < voices.Count(); i++) {
+							if(voices.Item(i).GetDescription().indexOf("Rosa") >= 0) {
+								ttsVoice.setVoice(voices.Item(i));
+								break;
+							}
 						}
 					}
 					
-					javier.mainLoop("http://localhost/sictel.php");
+					javier.mainLoop("http://oslo/sictel.php");
+					exitWaitLoop = true;
 				}
 			});
 		javierThread.setUncaughtExceptionHandler(this);
@@ -95,6 +98,7 @@ public class AGIHandler
 			Thread.yield();
 			
 			try {
+				System.out.println("WAIT");
 				if(Integer.valueOf(agi.appexec("WAIT", "1")) < 0) {
 					break;
 				}
@@ -102,7 +106,7 @@ public class AGIHandler
 				e.printStackTrace();
 			}
 		}
-		System.out.println("Succesfully end!");
+		System.out.println("Script ended up!");
 	}
 
 	/**
@@ -218,7 +222,14 @@ public class AGIHandler
 		
 		spfs.Close();
 		
-		ProcessBuilder soxProc = new ProcessBuilder("C:\\cygroot\\asterisk\\var\\lib\\sounds\\sox",wavPath,gsmPath);
+		ProcessBuilder soxProc 
+			= new ProcessBuilder("C:\\cygroot\\asterisk\\var\\lib\\sounds\\sox"
+					,wavPath
+					//,"-r 8000"
+					,gsmPath
+					/*
+					,"resample"
+					,"-ql"*/);
 		try {
 			soxProc.start();
 		} catch (IOException e) {

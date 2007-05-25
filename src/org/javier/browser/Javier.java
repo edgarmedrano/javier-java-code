@@ -474,7 +474,9 @@ public class Javier
 			if(document.getState() == State.CREATED) {
 				load(document);
 			}
+			
 			try {
+				System.out.println("MAIN");
 				TimeUnit.MILLISECONDS.sleep(10);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
@@ -487,6 +489,7 @@ public class Javier
 				break;
 			}
 		}
+		System.out.println("out of main loop");
 		return endCode;
 	}
 	
