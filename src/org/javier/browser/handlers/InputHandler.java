@@ -10,8 +10,10 @@
  */
 package org.javier.browser.handlers;
 
+import java.io.IOException;
+
 public interface InputHandler {
 
-	String getInput(String text, String value);
+	String getInput(String text, String value) throws IOException;
 
 }

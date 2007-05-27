@@ -156,7 +156,7 @@ public class MSXMLHTTPNetworkHandler
 	 */
 	public void run() {
 		int readyState = xmlhttp.getReadyState(); 
-		int lastReadyState = readyState;
+		int lastReadyState;
 		int elapsedTime = 0;
 		
 		while(readyState != 4) {
@@ -177,8 +177,20 @@ public class MSXMLHTTPNetworkHandler
 				elapsedTime += 10;
 				readyState = xmlhttp.getReadyState();
 			}
-			readyStateChange();
+			
+			if(readyState != 4) {
+				readyStateChange();
+			}
 		}
+		
+		readyStateChange(); // process state 4 
 		//timer = null;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.javier.browser.handlers.NetworkHandler#abort()
+	 */
+	public void abort() {
+		xmlhttp.abort();
 	}
 }

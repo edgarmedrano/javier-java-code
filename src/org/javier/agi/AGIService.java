@@ -15,10 +15,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import org.javier.util.NullOutputStream;
 
 /**
  * FastAGI Server.
@@ -95,12 +96,13 @@ public class AGIService {
 				InvocationTargetException, IOException {
 			this.socket = socket;
 			try {
-				agi = new AGIConnection(socket.getInputStream(),socket.getOutputStream(), System.err);
+				agi = new AGIConnection(socket.getInputStream()
+						,socket.getOutputStream()
+						,new NullOutputStream());
 			} catch (AGIException e) {
 				socket.close();
 				e.printStackTrace();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			script = (AGIScript) handlerConstructor.newInstance();
@@ -194,9 +196,8 @@ public class AGIService {
 		try {
 			for (;;) {
 				try {
-					System.out.println("ACCEPT");
-					new Thread(new Handler(serverSocket.accept())).start();
-					//pool.execute(new Handler(serverSocket.accept()));
+					//System.out.println("ACCEPT");
+					pool.execute(new Handler(serverSocket.accept()));
 				} catch (IllegalArgumentException e) {
 					e.printStackTrace();
 				} catch (InstantiationException e) {

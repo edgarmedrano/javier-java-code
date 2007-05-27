@@ -26,7 +26,6 @@ import javax.script.ScriptException;
 import org.javier.browser.event.DocumentListener;
 import org.javier.util.EscapeUnescape;
 import org.javier.util.FastConcatenation;
-import org.javier.util.ScriptDebugger;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;

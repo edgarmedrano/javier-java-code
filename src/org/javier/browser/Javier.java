@@ -13,6 +13,7 @@
 package org.javier.browser;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
@@ -52,8 +53,9 @@ public class Javier
 	 * The main method.
 	 * 
 	 * @param argv the argv
+	 * @throws IOException 
 	 */
-	public static void main(String[] argv) {
+	public static void main(String[] argv) throws IOException {
 		final Javier javier;
 		String strAppURL = "http://localhost/javier/default.vxml";
 		String strVoice = "";
@@ -223,15 +225,17 @@ public class Javier
 	 * or it could be showed on a screen. 
 	 * 
 	 * @param text the text
+	 * @throws IOException 
 	 */
-	public void addText(String text) {
+	public void addText(String text) throws IOException {
 		fireOuputAddText(text);
 	}
 	
 	/**
 	 * Clear text. Stops syntethization or screen output of text.
+	 * @throws IOException 
 	 */
-	public void clearText() {
+	public void clearText() throws IOException {
 		fireOuputClearText();
 	}
 	
@@ -258,13 +262,18 @@ public class Javier
 	 * the document's evaluation. 
 	 * 
 	 * @param endCode the end code
+	 * @throws IOException 
 	 */
 	public void end(int endCode) {
 		if(endCode != END_CODE_SUCCESS) {
 			document.setState(State.ERROR);
 		}
 		this.endCode = endCode;
-		fireOuputWaitUntilDone();
+		try {
+			fireOuputWaitUntilDone();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		fireExcecutionEnded(endCode);
 		exitMainLoop = true;
 	}
@@ -339,8 +348,9 @@ public class Javier
 	 * Propagates the "output add text" event to javier's listeners.
 	 * 
 	 * @param text the text
+	 * @throws IOException 
 	 */
-	protected void fireOuputAddText(String text) {
+	protected void fireOuputAddText(String text) throws IOException {
 		for(OutputListener l: vecOutputLs) {
 			l.addText(text);
 		}
@@ -348,8 +358,9 @@ public class Javier
 	
 	/**
 	 * Propagates the "ouput clear text" event to javier's listeners.
+	 * @throws IOException 
 	 */
-	protected void fireOuputClearText() {
+	protected void fireOuputClearText() throws IOException {
 		for(OutputListener l: vecOutputLs) {
 			l.clearText();
 		}
@@ -357,8 +368,9 @@ public class Javier
     
 	/**
 	 * Propagates the "ouput wait until done" event to javier's listeners.
+	 * @throws IOException 
 	 */
-	protected void fireOuputWaitUntilDone() {
+	protected void fireOuputWaitUntilDone() throws IOException {
 		for(OutputListener l: vecOutputLs) {
 			l.waitUntilDone();
 		}
@@ -380,8 +392,9 @@ public class Javier
 	 * 
 	 * @param text the text used to prompt
 	 * @return the captured input
+	 * @throws IOException 
 	 */
-	public String getInput(String text) {
+	public String getInput(String text) throws IOException {
 		return getInput(text,"");
 	}
 
@@ -392,8 +405,9 @@ public class Javier
 	 * @param text the text to be used while prompting
 	 * @param value the default value
 	 * @return the captured input
+	 * @throws IOException 
 	 */
-	public String getInput(String text,String value) {
+	public String getInput(String text,String value) throws IOException {
 		String result = inHandler.getInput(text,value);
 		clearText();
 		return result;
@@ -413,8 +427,9 @@ public class Javier
 	 * 
 	 * @param docRef the document
 	 * @return <code>true</code>, if load is successfully set
+	 * @throws IOException 
 	 */
-	public boolean load(Document docRef) {
+	public boolean load(Document docRef) throws IOException {
 		if(!docRef.getUrl().equals("")) {
 			document.setState(State.LOADING);
 			document = docRef;
@@ -440,8 +455,9 @@ public class Javier
 	 * @param docURL the document's URL
 	 * 
 	 * @return <code>true</code>, if load is successfully set
+	 * @throws IOException 
 	 */
-	public boolean load(String docURL) {
+	public boolean load(String docURL) throws IOException {
 		return load(new Document(docURL));
 	}
 
@@ -466,9 +482,10 @@ public class Javier
 	 * The {@link #document} field must be set before calling this method.
 	 * 
 	 * @return the end code
+	 * @throws IOException 
 	 * @see #end(int)
 	 */
-	public int mainLoop() {
+	public int mainLoop() throws IOException {
 		exitMainLoop = false;
 		while(!exitMainLoop) {
 			if(document.getState() == State.CREATED) {
@@ -476,7 +493,7 @@ public class Javier
 			}
 			
 			try {
-				System.out.println("MAIN");
+				//System.out.println("MAIN");
 				TimeUnit.MILLISECONDS.sleep(10);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
@@ -489,7 +506,7 @@ public class Javier
 				break;
 			}
 		}
-		System.out.println("out of main loop");
+		//System.out.println("out of main loop");
 		return endCode;
 	}
 	
@@ -501,9 +518,10 @@ public class Javier
 	 * @param home the home document
 	 * 
 	 * @return the end code
+	 * @throws IOException 
 	 * @see #end(int)
 	 */
-	public int mainLoop(Document home) {
+	public int mainLoop(Document home) throws IOException {
 		this.document = home;
 		return mainLoop();
 	}
@@ -516,9 +534,10 @@ public class Javier
 	 * @param homeURL the home document's URL
 	 * 
 	 * @return the end code
+	 * @throws IOException 
 	 * @see #end(int)
 	 */
-	public int mainLoop(String homeURL) {
+	public int mainLoop(String homeURL) throws IOException {
 		return mainLoop(new Document(homeURL));
 	}
 	
@@ -526,6 +545,7 @@ public class Javier
 	 * Process.
 	 * 
 	 * @param result the result
+	 * @throws IOException 
 	 */
 	private void process(Object result) {
 		document.setState(State.LOADED);
@@ -538,7 +558,7 @@ public class Javier
 						run();
 					}
 				} catch(Exception e) {
-					e.printStackTrace(System.out);
+					e.printStackTrace();
 					this.error(this,"Execution error: " + e.getClass().getName() + " " + e.getMessage());
 					this.end(END_CODE_ERROR);
 				}
@@ -591,10 +611,11 @@ public class Javier
 	/**
 	 * Executes the current document. If {@link #autoEval} is 
 	 * <code>false</code>, you must call this method to execute the document. 
+	 * @throws IOException 
 	 * 
 	 * @see #document
 	 */
-	protected void run() {
+	protected void run() throws IOException {
 		try {
 			document = document.execute(this);
 		} catch(Exception e) {
@@ -623,7 +644,7 @@ public class Javier
 	 * @see org.javier.browser.DocumentListener#stateChanged(org.javier.browser.Document.State)
 	 */
 	public void stateChanged(State state) {
-		//TODO: Wake up thread
+		// do nothing
 	}
 
 	/**
@@ -660,5 +681,15 @@ public class Javier
 	 */
 	public void warningFound(String description) {
 		warning(document,description);
+	}
+
+	/**
+	 * Stops the document execution and exits main loop.
+	 */
+	public void stop() {
+		if(document.getState() == State.LOADING) {
+			netHandler.abort();
+		} 
+		exitMainLoop = true;
 	}
 }

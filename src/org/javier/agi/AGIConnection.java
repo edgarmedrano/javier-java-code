@@ -19,8 +19,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Properties;
+import java.util.Set;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,6 +52,30 @@ public class AGIConnection {
 		public Result(int i, String string) {
 			this(i);
 			get("result")[1] = string;			
+		}
+
+		@Override
+		public synchronized String toString() {
+			StringBuilder stb = new StringBuilder();
+			Enumeration<String> keys = this.keys();
+			while(keys.hasMoreElements()) {
+				String key = keys.nextElement();
+				String value[] = this.get(key); 
+				if(stb.length() > 0) {
+					stb.append(", ");
+				}
+				stb.append(key);
+				stb.append("=[");
+				for(int i = 0; i < value.length; i++) {
+					if(i > 0) {
+						stb.append(", ");						
+					}
+					stb.append(value[i]);
+				}
+				stb.append("]");
+			}
+			
+			return "{" + stb.toString() + "}";
 		}
 	}
 	
@@ -121,7 +148,7 @@ public class AGIConnection {
 		errStream = err;
 		this.in = new BufferedReader(new InputStreamReader(inStream));
 		this.out = outStream;
-		this.err = new PrintWriter(errStream);
+		this.err = new PrintWriter(errStream,true);
 		
 		//_got_sighup = false;
 		//signal.signal(signal.SIGHUP, _handle_sighup)  // handle SIGHUP
@@ -301,16 +328,16 @@ public class AGIConnection {
 	 * Close I/O and error streams.
 	 */
 	public void close() {
-		if(!System.in.equals(inStream)) {
+		if(!System.out.equals(outStream)) {
 			try {
-				in.close();
+				out.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
-		if(!System.out.equals(outStream)) {
+		if(!System.in.equals(inStream)) {
 			try {
-				out.close();
+				in.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
