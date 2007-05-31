@@ -27,6 +27,8 @@ import org.javier.jacob.SAPI.ISpeechObjectTokens;
 import org.javier.jacob.SAPI.SpFileStream;
 import org.javier.jacob.SAPI.SpVoice;
 
+import com.jacob.com.ComThread;
+
 /**
  * AGI Input/Output handler
  */
@@ -46,6 +48,10 @@ public class AGIHandler
 	private Javier javier;
 	private Thread javierThread;
 	
+	static {
+		ComThread.startMainSTA();		
+	}
+	
 	private static synchronized int getFileIndex() {
 		return ++file_index;
 	}
@@ -53,6 +59,8 @@ public class AGIHandler
 	public AGIHandler() {
 		final AGIHandler selfRef = this;
 		//HashMap properties = agi.getAGIProperties();
+		
+		ComThread.InitMTA();		
 		ttsVoice = (SpVoice) createActiveXObject(SpVoice.class);
 		ISpeechObjectTokens voices = ttsVoice.GetVoices();
 		
@@ -66,6 +74,7 @@ public class AGIHandler
 		javierThread = new Thread(new Runnable() {
 			
 			public void run() {
+				ComThread.InitMTA(); 
 				javier = new Javier(selfRef,new MSXMLHTTPNetworkHandler());
 				javier.addJavierListener(selfRef);
 				javier.addOutputListener(selfRef);
@@ -80,11 +89,12 @@ public class AGIHandler
 				*/
 				
 				try {
-					javier.mainLoop("http://localhost/sictel.php");
+					javier.mainLoop("http://oslo/sictel.php");
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 				exitWaitLoop = true;
+				ComThread.Release(); 
 			}
 		});
 		javierThread.setUncaughtExceptionHandler(this);
@@ -105,7 +115,6 @@ public class AGIHandler
 			Thread.yield();
 			
 			try {
-				//System.out.println("WAIT");
 				if(Integer.valueOf(agi.appexec("WAIT", "1")) < 0) {
 					break;
 				}
@@ -114,7 +123,7 @@ public class AGIHandler
 			}
 		}
 		javier.stop();
-		//System.out.println("Script ended up!");
+		ComThread.Release(); 
 	}
 
 	/**

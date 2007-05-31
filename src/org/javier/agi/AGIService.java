@@ -70,16 +70,12 @@ public class AGIService {
 		/** The socket. */
 		protected Socket socket;
 
-		/** The script. */
-		protected AGIScript script;
-
-		private AGIConnection agi;
-
 		/**
 		 * The Constructor.
 		 * 
 		 * @param socket
 		 *            the socket
+		 * @throws IOException 
 		 * 
 		 * @throws IllegalArgumentException
 		 *             the illegal argument exception
@@ -91,35 +87,48 @@ public class AGIService {
 		 *             the instantiation exception
 		 * @throws IOException 
 		 */
-		public Handler(Socket socket) throws IllegalArgumentException,
-				InstantiationException, IllegalAccessException,
-				InvocationTargetException, IOException {
+		public Handler(Socket socket) throws IOException {
 			this.socket = socket;
-			try {
-				agi = new AGIConnection(socket.getInputStream()
-						,socket.getOutputStream()
-						,new NullOutputStream());
-			} catch (AGIException e) {
-				socket.close();
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			script = (AGIScript) handlerConstructor.newInstance();
 		}
 
 		/* (non-Javadoc)
 		 * @see java.lang.Runnable#run()
 		 */
 		public void run() {
-			script.execute(agi);
-			agi.close();
+			try {
+				AGIConnection agi = new AGIConnection(socket.getInputStream()
+						,socket.getOutputStream()
+						,new NullOutputStream());
+				
+				try {
+					AGIScript script = (AGIScript) handlerConstructor.newInstance();
+					script.execute(agi);
+				} catch (IllegalArgumentException e1) {
+					e1.printStackTrace();
+				} catch (InstantiationException e1) {
+					e1.printStackTrace();
+				} catch (IllegalAccessException e1) {
+					e1.printStackTrace();
+				} catch (InvocationTargetException e1) {
+					e1.printStackTrace();
+				}
+				
+				agi.close();
+			} catch (AGIException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			
 			try {
 				socket.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			/**/
+			
+			/*Try to free resources*/
+			socket = null;
+			System.gc();
 		}
 	}
 
@@ -196,15 +205,8 @@ public class AGIService {
 		try {
 			for (;;) {
 				try {
-					//System.out.println("ACCEPT");
 					pool.execute(new Handler(serverSocket.accept()));
 				} catch (IllegalArgumentException e) {
-					e.printStackTrace();
-				} catch (InstantiationException e) {
-					e.printStackTrace();
-				} catch (IllegalAccessException e) {
-					e.printStackTrace();
-				} catch (InvocationTargetException e) {
 					e.printStackTrace();
 				}
 			}
