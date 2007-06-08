@@ -41,12 +41,10 @@ public class AGIHandler
 	  {
 
 	private AGIConnection agi;
-	private boolean exitWaitLoop;
 	private static int file_index;
 	private SpVoice ttsVoice;
 	private String buffer = "";
 	private Javier javier;
-	private Thread javierThread;
 	
 	static {
 		ComThread.startMainSTA();		
@@ -56,9 +54,9 @@ public class AGIHandler
 		return ++file_index;
 	}
 	
-	public AGIHandler() {
-		final AGIHandler selfRef = this;
-		//HashMap properties = agi.getAGIProperties();
+
+	public void execute(AGIConnection agi) {
+		this.agi = agi;
 		
 		ComThread.InitMTA();		
 		ttsVoice = (SpVoice) createActiveXObject(SpVoice.class);
@@ -70,60 +68,25 @@ public class AGIHandler
 				break;
 			}
 		}
+		javier = new Javier(this,new MSXMLHTTPNetworkHandler());
+		javier.addJavierListener(this);
+		javier.addOutputListener(this);
 		
-		javierThread = new Thread(new Runnable() {
-			
-			public void run() {
-				ComThread.InitMTA(); 
-				javier = new Javier(selfRef,new MSXMLHTTPNetworkHandler());
-				javier.addJavierListener(selfRef);
-				javier.addOutputListener(selfRef);
-				
-				javier.addLogListener(new ConsoleLogHandler());
-				/*
-				try {
-					javier.addLogListener(new StreamLogHandler("Javier.log"));
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				}
-				*/
-				
-				try {
-					javier.mainLoop("http://oslo/sictel.php");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				exitWaitLoop = true;
-				ComThread.Release(); 
-			}
-		});
-		javierThread.setUncaughtExceptionHandler(this);
-	}
-	
-	/* (non-Javadoc)
-	 * @see com.orderlysoftware.orderlycalls.asterisk.agi.AGIProcessor#processCall(com.orderlysoftware.orderlycalls.asterisk.agi.AGIConnection)
-	 */
-	public void execute(AGIConnection agi) {
-		this.agi = agi;
-		javierThread.start();
-		
-		for(;;) {
-			if(exitWaitLoop) {
-				break;
-			}
-			
-			Thread.yield();
-			
-			try {
-				if(Integer.valueOf(agi.appexec("WAIT", "1")) < 0) {
-					break;
-				}
-			} catch (Exception e) {
-				break;
-			}
+		javier.addLogListener(new ConsoleLogHandler());
+		/*
+		try {
+			javier.addLogListener(new StreamLogHandler("Javier.log"));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
 		}
-		javier.stop();
-		ComThread.Release(); 
+		*/
+		
+		try {
+			javier.mainLoop("http://localhost/sictel.php");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		ComThread.Release(); 				
 	}
 
 	/**
@@ -133,7 +96,6 @@ public class AGIHandler
 	 *            the end code
 	 */
 	public void excecutionEnded(int endCode) {
-		exitWaitLoop = true;
 	}
 
 	/**
@@ -174,13 +136,11 @@ public class AGIHandler
 			result = buffer;
 			buffer = "";
 		} catch (Exception e) {
-			exitWaitLoop = true;
 			e.printStackTrace();
 		}
 		
 		return result;
 	}
-
 
 	/**
 	 * Adds the text.
@@ -193,12 +153,10 @@ public class AGIHandler
 		String file = textToWav(text);
 		
 		if(file == null) {
-			exitWaitLoop = true;
 		} else {
 			try {
 				buffer += agi.stream_file(file,"0123456789");
 			} catch (Exception e) {
-				exitWaitLoop = true;
 				throw(new IOException(e.getMessage(),e.getCause()));
 			}
 		}
@@ -208,9 +166,7 @@ public class AGIHandler
 		SpFileStream spfs = (SpFileStream) createActiveXObject(SpFileStream.class);
 		String fileName;
 		String wavPath;
-		String gsmPath;
 		File wavFile;
-		File gsmFile;
 		
 		/********************************************************
 		Implement caching here
@@ -218,13 +174,12 @@ public class AGIHandler
 		
 		do {
 			fileName = "javier" + getFileIndex();
-			wavPath = "" + fileName + ".wav";
-			gsmPath = "C:\\cygroot\\asterisk\\var\\lib\\sounds\\" + fileName + ".gsm";
+			wavPath = "C:\\cygroot\\asterisk\\var\\lib\\sounds\\" + fileName + ".WAV";
 			wavFile = new File(wavPath);
-			gsmFile = new File(gsmPath);
-		} while(wavFile.exists() || gsmFile.exists());
+		} while(wavFile.exists());
 		
-		spfs.getFormat().setType(SAFT8kHz8BitMono);
+		
+		spfs.getFormat().setType(SAFT8kHz16BitMono);
 		spfs.Open(wavPath, SSFMCreateForWrite, false);
 		
 		ttsVoice.setAllowAudioOutputFormatChangesOnNextSet(false);
@@ -233,35 +188,10 @@ public class AGIHandler
 		ttsVoice.Speak(text, SVSFDefault);
 		
 		spfs.Close();
-		
-		ProcessBuilder soxProc 
-			= new ProcessBuilder("C:\\cygroot\\asterisk\\var\\lib\\sounds\\sox"
-					,wavPath
-					//,"-r 8000"
-					,gsmPath
-					/*
-					,"resample"
-					,"-ql"*/);
-		try {
-			soxProc.start();
-		} catch (IOException e) {
-			fileName = null;
-			e.printStackTrace();
-		}
-		
-		while(!gsmFile.exists()) {
-			try {
-				Thread.sleep(1);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		wavFile.delete();
-		
+				
 		return fileName;
 	}
-
+	
 	/**
 	 * Clear text.
 	 */
@@ -277,7 +207,6 @@ public class AGIHandler
 	}
 
 	public void uncaughtException(Thread t, Throwable e) {
-		e.printStackTrace();
-		exitWaitLoop = true;	
+		e.printStackTrace();	
 	}
 }

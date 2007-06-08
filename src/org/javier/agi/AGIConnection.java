@@ -36,22 +36,40 @@ public class AGIConnection {
 	 */
 	protected class Result extends Hashtable<String, String[]> {
 		
+		/** The Constant serialVersionUID. */
 		private static final long serialVersionUID = -3272685660490686408L;
 
+		/**
+		 * The Constructor.
+		 */
 		public Result() {
-			put("result", new String[2]);
+			put("result", new String[] {"",""});
 		}
 		
+		/**
+		 * The Constructor.
+		 * 
+		 * @param i the result code
+		 */
 		public Result(int i) {
 			this();
 			get("result")[0] = String.valueOf(i);
 		}
 
+		/**
+		 * The Constructor.
+		 * 
+		 * @param string additional result description
+		 * @param i the result code
+		 */
 		public Result(int i, String string) {
 			this(i);
 			get("result")[1] = string;			
 		}
 
+		/* (non-Javadoc)
+		 * @see java.util.Hashtable#toString()
+		 */
 		@Override
 		public synchronized String toString() {
 			StringBuilder stb = new StringBuilder();

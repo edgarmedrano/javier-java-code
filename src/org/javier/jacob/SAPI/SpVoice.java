@@ -27,6 +27,93 @@ import org.javier.jacob.OleProperty;
 public interface SpVoice extends Dispatchable {
 
 	/**
+	 * Returns all the voices available to the voice.
+	 * 
+	 * @return all the voices available to the voice.
+	 */
+	@OleMethod ISpeechObjectTokens GetVoices();
+
+	/**
+	 * Returns a selection of voices available to the voice.
+	 * 
+	 * <p>Selection criteria may be applied optionally. In the absence 
+	 * of selection criteria, all voices are returned in the selection, 
+	 * ordered alphabetically by the voice name. If no voices match the 
+	 * criteria, GetVoices returns an empty selection, that is, an 
+	 * ISpeechObjectTokens collection with a Count of zero.</p>
+	 *
+	 * @param RequiredAttributes 
+	 *          the RequiredAttributes. All voices selected will match 
+	 *          these specifications. If no voices match the selection, 
+	 *          the selection returned will contain no voices. 
+	 *          By default, no attributes are required and so the list 
+	 *          returns all the tokens discovered. 
+	 * 
+	 * @return a selection of voices available to the voice.
+	 */
+	@OleMethod ISpeechObjectTokens GetVoices(
+		     String RequiredAttributes);
+
+	/**
+	 * Returns a selection of voices available to the voice.
+	 * 
+	 * <p>Selection criteria may be applied optionally. In the absence 
+	 * of selection criteria, all voices are returned in the selection, 
+	 * ordered alphabetically by the voice name. If no voices match the 
+	 * criteria, GetVoices returns an empty selection, that is, an 
+	 * ISpeechObjectTokens collection with a Count of zero.</p>
+	 *
+	 * @param RequiredAttributes 
+	 *          the RequiredAttributes. All voices selected will match 
+	 *          these specifications. If no voices match the selection, 
+	 *          the selection returned will contain no voices. 
+	 *          By default, no attributes are required and so the list 
+	 *          returns all the tokens discovered. 
+	 * 
+	 * @param OptionalAttributes 
+	 *          the OptionalAttributes. Voices which match these 
+	 *          specifications will be returned at the front of the 
+	 *          selection. By default, no attribute is specified and the 
+	 *          list returned from the speech configuration database is 
+	 *          in the order that attributes were discovered. 
+	 * 
+	 * @return a selection of voices available to the voice.
+	 */
+	@OleMethod ISpeechObjectTokens GetVoices(
+		     String RequiredAttributes,
+		     String OptionalAttributes);
+	
+	/**
+	 * Sets the flag that specifies whether SAPI will adjust the format of a 
+	 * voice object's new audio output device automatically.
+	 * 
+	 * <p>By default, when an application sets a voice object's AudioOutput 
+	 * property to an audio device, SAPI will change the format of that 
+	 * device to match the engine's preferred format. In cases where a 
+	 * specific audio format is required, such as telephony applications, 
+	 * the AllowOutputFormatChangesOnNextSet property can be used to prevent 
+	 * this format change.</p>
+	 * 
+	 * @param allowChanges When <code>true</code>, SAPI adjusts the format 
+	 *                     of the audio output object to the engine's 
+	 *                     preferred format. <br>
+	 *                     When <code>false</code>, SAPI uses the audio 
+	 *                     output object's format.<br>
+	 *                     If the output is set to a stream object, SAPI 
+	 *                     will convert the output to the format of the 
+	 *                     stream.
+	 */
+	@OleProperty void setAllowAudioOutputFormatChangesOnNextSet(
+			boolean allowChanges);
+	
+	/**
+	 * Sets the current audio output object used by the voice.
+	 * 
+	 * @param stream the current audio output object used by the voice.
+	 */
+	@OleProperty void setAudioOutputStream(SpFileStream stream);
+	
+	/**
 	 * Sets the currently active member of the Voices collection.
 	 * 
 	 * @param voice the voice
@@ -65,93 +152,6 @@ public interface SpVoice extends Dispatchable {
 	 */
 	@OleMethod long Speak(String text,int options);
 
-	/**
-	 * Sets the flag that specifies whether SAPI will adjust the format of a 
-	 * voice object's new audio output device automatically.
-	 * 
-	 * <p>By default, when an application sets a voice object's AudioOutput 
-	 * property to an audio device, SAPI will change the format of that 
-	 * device to match the engine's preferred format. In cases where a 
-	 * specific audio format is required, such as telephony applications, 
-	 * the AllowOutputFormatChangesOnNextSet property can be used to prevent 
-	 * this format change.</p>
-	 * 
-	 * @param allowChanges When <code>true</code>, SAPI adjusts the format 
-	 *                     of the audio output object to the engine's 
-	 *                     preferred format. <br>
-	 *                     When <code>false</code>, SAPI uses the audio 
-	 *                     output object's format.<br>
-	 *                     If the output is set to a stream object, SAPI 
-	 *                     will convert the output to the format of the 
-	 *                     stream.
-	 */
-	@OleProperty void setAllowAudioOutputFormatChangesOnNextSet(
-			boolean allowChanges);
-
-	/**
-	 * Sets the current audio output object used by the voice.
-	 * 
-	 * @param stream the current audio output object used by the voice.
-	 */
-	@OleProperty void setAudioOutputStream(SpFileStream stream);
-	
-	/**
-	 * Returns all the voices available to the voice.
-	 * 
-	 * @return all the voices available to the voice.
-	 */
-	@OleMethod ISpeechObjectTokens GetVoices();
-	
-	/**
-	 * Returns a selection of voices available to the voice.
-	 * 
-	 * <p>Selection criteria may be applied optionally. In the absence 
-	 * of selection criteria, all voices are returned in the selection, 
-	 * ordered alphabetically by the voice name. If no voices match the 
-	 * criteria, GetVoices returns an empty selection, that is, an 
-	 * ISpeechObjectTokens collection with a Count of zero.</p>
-	 *
-	 * @param RequiredAttributes 
-	 *          the RequiredAttributes. All voices selected will match 
-	 *          these specifications. If no voices match the selection, 
-	 *          the selection returned will contain no voices. 
-	 *          By default, no attributes are required and so the list 
-	 *          returns all the tokens discovered. 
-	 * 
-	 * @return a selection of voices available to the voice.
-	 */
-	@OleMethod ISpeechObjectTokens GetVoices(
-		     String RequiredAttributes);
-	
-	/**
-	 * Returns a selection of voices available to the voice.
-	 * 
-	 * <p>Selection criteria may be applied optionally. In the absence 
-	 * of selection criteria, all voices are returned in the selection, 
-	 * ordered alphabetically by the voice name. If no voices match the 
-	 * criteria, GetVoices returns an empty selection, that is, an 
-	 * ISpeechObjectTokens collection with a Count of zero.</p>
-	 *
-	 * @param RequiredAttributes 
-	 *          the RequiredAttributes. All voices selected will match 
-	 *          these specifications. If no voices match the selection, 
-	 *          the selection returned will contain no voices. 
-	 *          By default, no attributes are required and so the list 
-	 *          returns all the tokens discovered. 
-	 * 
-	 * @param OptionalAttributes 
-	 *          the OptionalAttributes. Voices which match these 
-	 *          specifications will be returned at the front of the 
-	 *          selection. By default, no attribute is specified and the 
-	 *          list returned from the speech configuration database is 
-	 *          in the order that attributes were discovered. 
-	 * 
-	 * @return a selection of voices available to the voice.
-	 */
-	@OleMethod ISpeechObjectTokens GetVoices(
-		     String RequiredAttributes,
-		     String OptionalAttributes);
-	
 	/**
 	 * Blocks the caller until either the voice has finished speaking or the 
 	 * specified time interval has elapsed.
