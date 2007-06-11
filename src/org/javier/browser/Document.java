@@ -12,6 +12,7 @@
 package org.javier.browser;
 
 import java.util.Hashtable;
+import java.util.Properties;
 import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,7 +39,6 @@ import org.w3c.dom.NodeList;
  * @author Edgar Medrano Pérez
  */
 public class Document {
-	
 	/**
 	 * Enumerates the document states.
 	 */
@@ -113,6 +113,9 @@ public class Document {
 	/** The script engine used to evaluate the document's JavaScript code. */
 	protected ScriptEngine seJavaScript;
 	
+	/** The properties. */
+	protected Properties properties;
+	
 	/**
 	 * Default constructor rarely used.
 	 */
@@ -160,6 +163,7 @@ public class Document {
 		this.maxstale = maxStale;
 		this.timeout = timeout;
 		this.xml = null;
+		properties = new Properties();
 	}
 	
 	/**
@@ -543,7 +547,14 @@ public class Document {
 					fc.push("return \"#_int_exit\";");
 					break;
 				case Field:
-					fc.push(snst, "case \"", childA.getNamedItem("name").getNodeValue(), "\":"); 
+					fc.push(snst, "case \"", childA.getNamedItem("name").getNodeValue(), "\":");
+					
+					if(childA.getNamedItem("cond") != null) {
+						fc.push(snst, "\tif("
+								, childA.getNamedItem("cond").getNodeValue().replaceAll("\n",snst + "\t")
+								, ") {");
+					}	
+					
 					fc.push(snst, "\ttry {");
 					fc.push(snst, "\t\tthis."
 							, childA.getNamedItem("name").getNodeValue()
@@ -561,6 +572,12 @@ public class Document {
 							, childA.getNamedItem("name").getNodeValue()
 							, "\","
 							, childA.getNamedItem("name").getNodeValue()
+							, ",\""
+							, childA.getNamedItem("type") != null ? childA.getNamedItem("type").getNodeValue() : ""
+							, "\",\""
+							, childA.getNamedItem("slot") != null ? childA.getNamedItem("slot").getNodeValue() : ""
+							, "\","
+							, childA.getNamedItem("modal") != null ? childA.getNamedItem("modal").getNodeValue().toLowerCase() : "false"
 							, ");");
 					fc.push(snst, "\t\tif(filled) {");
 					fc.push(snst, "\t\t\t"
@@ -646,6 +663,11 @@ public class Document {
 					fc.push(snst, "\t\t}");
 					fc.push(snst, "\t\tif(_break) { break; }");
 					fc.push(snst, "\t}");
+					
+					if(childA.getNamedItem("cond") != null) {
+						fc.push(snst, "}");
+					}	
+					
 					break;
 				case Form:
 				case Menu: // Menu is equivalent to form don't move this code
@@ -907,13 +929,11 @@ public class Document {
 					}
 					break;
 				case Property:
-					/*
-					result.push(snst, "setProperty(\""
+					fc.push(snst, "__document__.setProperty(\""
 						, childA.getNamedItem("name").getNodeValue()
 						, "\",\""
-						, childA.getNamedItem("value").getNodeValue().replaceAll("\n",snst + "\t")
+						, childA.getNamedItem("value").getNodeValue()
 						, "\");");
-					*/
 					break;
 				case Script:
 					if(child.getFirstChild() != null) {
@@ -1120,5 +1140,26 @@ public class Document {
 		stbResult.push("> */");
 		
 		return stbResult;
+	}
+
+	/**
+	 * Gets the property.
+	 * 
+	 * @param name the name
+	 * 
+	 * @return the property
+	 */
+	public String getProperty(String name) {
+		return properties.getProperty(name, "");
+	}
+
+	/**
+	 * Sets the property.
+	 * 
+	 * @param name  the name
+	 * @param value the value
+	 */
+	public void setProperty(String name, String value) {
+		properties.setProperty(name, value);
 	}
 }

@@ -30,7 +30,7 @@ public class ConsoleInputHandler implements InputHandler {
 		}
 	}
 	
-	public String getInput(String text,String value) {
+	public String getInput(String text, String value, String type, String slot, boolean modal) throws IOException {
 		String result = "";
 		
 		if(console != null) {

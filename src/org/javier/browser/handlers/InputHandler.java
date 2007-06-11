@@ -14,6 +14,7 @@ import java.io.IOException;
 
 public interface InputHandler {
 
-	String getInput(String text, String value) throws IOException;
+	String getInput(String text, String value, String type, String slot, boolean modal) 
+	   throws IOException;
 
 }

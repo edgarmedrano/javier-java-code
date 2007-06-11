@@ -17,6 +17,7 @@ import static org.javier.jacob.SAPI.SpeechVoiceSpeakFlags.*;
 
 import java.io.File;
 import java.io.IOException;
+import org.javier.browser.DataType;
 import org.javier.browser.Javier;
 import org.javier.browser.event.JavierListener;
 import org.javier.browser.event.OutputListener;
@@ -81,6 +82,16 @@ public class AGIHandler
 		}
 		*/
 		
+		// Translate AGI properties to VoiceXML properties
+		try {
+			String value = agi.get_variable("TIMEOUT(digit)");
+			if(!value.equals("")) {
+				javier.setProperty("timeout", value + "s");				
+			}
+		} catch (AGIException e1) {
+			e1.printStackTrace();
+		}
+		
 		try {
 			javier.mainLoop("http://localhost/sictel.php");
 		} catch (IOException e) {
@@ -128,12 +139,26 @@ public class AGIHandler
 	 * 
 	 * @return the input
 	 */
-	public String getInput(String text, String value) {
+
+	public String getInput(String text, String value, String type, String slot, boolean modal) throws IOException {
 		String result = value;
+		String timeout = javier.getProperty("timeout");
+		long time = 0;
+		DataType datatype = DataType.getType(type);
+		
+		if(timeout.indexOf("ms") >= 0) {
+			timeout.replaceFirst("ms", "");
+			time = Long.parseLong(timeout);
+		} else {
+			if(timeout.indexOf("s") > 0) {
+				timeout.replaceFirst("s", "");
+				time = Long.parseLong(timeout) * 1000;
+			}
+		}		
 		
 		try {
-			buffer += agi.get_data("beep", 60000);
-			result = buffer;
+			buffer += agi.get_data("silence", time);
+			result = datatype.parse(buffer);
 			buffer = "";
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -14,6 +14,7 @@ package org.javier.browser;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Properties;
 import java.util.Vector;
 import java.util.concurrent.TimeUnit;
 
@@ -144,9 +145,13 @@ public class Javier
 	protected boolean autoEval = true;
 	
 	/** The execution end code. */
-	private int endCode;
+	protected int endCode;
 	
-	private boolean exitMainLoop = false;
+	/** Use this to break the main loop. */
+	protected boolean exitMainLoop = false;
+	
+	/** The properties. */
+	protected Properties properties;	
 	
 	/**
 	 * Creates a browser without output interaction.
@@ -170,6 +175,7 @@ public class Javier
 	Javier(InputHandler inHandler
 			,NetworkHandler netHandler
 			,String jsEngineName) {
+		properties = new Properties();
 		this.inHandler = inHandler;
 		this.netHandler = netHandler;
 		
@@ -395,7 +401,7 @@ public class Javier
 	 * @throws IOException 
 	 */
 	public String getInput(String text) throws IOException {
-		return getInput(text,"");
+		return getInput(text,"","","",false);
 	}
 
 	/**
@@ -407,8 +413,8 @@ public class Javier
 	 * @return the captured input
 	 * @throws IOException 
 	 */
-	public String getInput(String text,String value) throws IOException {
-		String result = inHandler.getInput(text,value);
+	public String getInput(String text,String value, String type, String slot, boolean modal) throws IOException {
+		String result = inHandler.getInput(text,value, type, slot, modal);
 		clearText();
 		return result;
 	}
@@ -692,4 +698,35 @@ public class Javier
 		} 
 		exitMainLoop = true;
 	}
+	
+
+	/**
+	 * Gets the property.
+	 * 
+	 * @param name the name
+	 * 
+	 * @return the property
+	 */
+	public String getProperty(String name) {
+		String result = "";
+		if(document !=  null) {
+			result = document.getProperty(name); 
+		} 
+		
+		if(result.equals("")) {
+			result = properties.getProperty(name, "");
+		}
+		
+		return result;
+	}
+
+	/**
+	 * Sets the property.
+	 * 
+	 * @param name  the name
+	 * @param value the value
+	 */
+	public void setProperty(String name, String value) {
+		properties.setProperty(name, value);
+	}	
 }
