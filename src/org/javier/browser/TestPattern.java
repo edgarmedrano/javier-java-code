@@ -25,28 +25,28 @@ public class TestPattern {
 		patterns.put("if-then", Pattern.compile("si (1) entonces (2|3|4)"));
 		patterns.put("", Pattern.compile(".*"));
 		*/
-		patterns.put("", Pattern.compile("\\d*((\\.|\\*)\\d*)?"));
-		String match = null;
+		patterns.put("", Pattern.compile("(\\d*((\\.|\\*)\\d*)?)"));
+		String match = "";
 		int length = 0;
 		String string = "123.0hola";
 		
 		for(Enumeration<String> keys = patterns.keys();keys.hasMoreElements();) {
 			String key = keys.nextElement();
 			Matcher matcher = patterns.get(key).matcher(string);
-			if(matcher.find() && matcher.groupCount() > 1) {
-				if(matcher.group(1).length() > length) {
-					match = key;
-					length = matcher.group(1).length();
+			if(matcher.find()) {
+				/*
+				for(int i = 0; i < matcher.groupCount(); i++) {
+					System.out.printf("match(%d): %s\n",i,matcher.group(i));					
+				}
+				*/
+				
+				if(matcher.group(0).length() > length) {
+					match = key.equals("") ? matcher.group(0) : key;
+					length = matcher.group(0).length();
 				}
 			}
 		} 
-		
-		if(match == null) {
-			match = "";
-		} else if(match.equals("")) {
-			match = string;
-		}
-		
+				
 		System.out.println("match: " + match);
 	}
 
