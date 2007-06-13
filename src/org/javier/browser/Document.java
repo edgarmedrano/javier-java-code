@@ -734,7 +734,10 @@ public class Document {
 					fc.push(this.parse(child,level + 5));
 					
 					if(childTag == Tag.Menu) {
-						fc.push(snst, "\t\t\t\t\t\tfilled = \"\" + __browser__.getInput(\"type your choice\",\"\");");
+						/**********************
+						 * WARNING!!!!!!!!! GRAMMAR SUPPORT MUST BE IMPLEMENTED
+						 */
+						fc.push(snst, "\t\t\t\t\t\tfilled = \"\" + __browser__.getInput(\"type your choice\",\"\",\"digits?length=1\",\"\",true);");
 						fc.push(snst, "\t\t\t\t\t\tif(filled) {");
 						fc.push(snst, "\t\t\t\t\t\t\tswitch(filled) { ");
 						for(int j = 0; j < childNL; j++) {
@@ -929,7 +932,7 @@ public class Document {
 					}
 					break;
 				case Property:
-					fc.push(snst, "__document__.setProperty(\""
+					fc.push(snst, "__browser__.setProperty(\""
 						, childA.getNamedItem("name").getNodeValue()
 						, "\",\""
 						, childA.getNamedItem("value").getNodeValue()

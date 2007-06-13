@@ -12,10 +12,8 @@
 package org.javier.browser;
 
 import java.util.Enumeration;
-import java.util.Formatter;
 import java.util.Hashtable;
 import java.util.Properties;
-import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,25 +61,41 @@ public class DataType {
 		}
 	}	
 		
+	/** The definition. */
+	protected String definition;
+	
+	/** The type. */
 	protected Type type;
+	
+	/** The patterns. */
 	protected final Hashtable<String,Pattern> patterns = new Hashtable<String, Pattern>();
 
+	/** The max. */
 	protected int max;
 
+	/** The min. */
 	protected int min;
 
+	/**
+	 * The Constructor.
+	 * 
+	 * @param pattern
+	 *            the pattern
+	 * @param type
+	 *            the type
+	 */
 	protected DataType(String type, String pattern) {
 		int index;
 		String[] args;
 		
 		index = type.indexOf('?');
 		if(index >= 0) {
-			args = type.substring(index).split(";");
-			type = type.substring(0, index - 1);
+			args = type.substring(index + 1).split(";");
+			type = type.substring(0, index);
 			for(String arg : args) {
 				index = arg.indexOf('=');
 				if(index >= 0) {
-					properties.setProperty(arg.substring(0, index - 1), arg.substring(index));
+					properties.setProperty(arg.substring(0, index), arg.substring(index + 1));
 				} else {
 					properties.setProperty(arg, "");
 				}
@@ -90,7 +104,7 @@ public class DataType {
 		
 		index = type.lastIndexOf('/');
 		if(index >= 0) {
-			type = type.substring(index);
+			type = type.substring(index + 1);
 		}
 		
 		this.type = htTypeEnum.get(type);
@@ -148,94 +162,154 @@ public class DataType {
 		    }
 			
 		    if(max < 0) {
-		    	min = parsePattern(pattern,255);		    	
+		    	max = parsePattern(pattern,255);		    	
 		    }
 			
 		}
-		
-		
+
+    	definition = type + ";grammar=" + pattern;
+    	
 		args = pattern.split(";");
 		for(String arg : args) {
 			index = arg.indexOf('=');
 			if(index >= 0) {
-				patterns.put(arg.substring(0, index - 1),Pattern.compile(arg.substring(index)));
+				patterns.put(arg.substring(0, index),Pattern.compile(arg.substring(index + 1)));
 			} else {
-				properties.setProperty("", arg);
+				patterns.put("", Pattern.compile(arg));
 			}
 		}
 	}
 	
+	/** The i. */
 	private int i;
-	private int parsePattern(String pattern, int weigth) {
+	
+	/**
+	 * Parses the pattern.
+	 * 
+	 * @param weight
+	 *            the weight
+	 * @param pattern
+	 *            the pattern
+	 * 
+	 * @return the int
+	 */
+	private int parsePattern(String pattern, int weight) {
 		i = 0;
-		return parsePattern(pattern, ' ', weigth);
+		return parsePattern(pattern, ' ', weight);
 	}
 	
-	private int parsePattern(String pattern, char parent, int weigth) {
+	/**
+	 * Parses the pattern.
+	 * 
+	 * @param weight
+	 *            the weight
+	 * @param pattern
+	 *            the pattern
+	 * @param parent
+	 *            the parent
+	 * 
+	 * @return the int
+	 */
+	private int parsePattern(String pattern, char parent, int weight) {
 		int length = 0;
 		int last = 0;
-		int next = 0;
 		
 		for(; i < pattern.length(); i++) {
-			if(!escape) {
-				escape = false;
-				switch(pattern.charAt(i)) {
-					case '\\':
-						i++;
-						last = 1;
-						length++;
-						break;
-					case '|':
-						if(parent == '|') {
-							return length;
-						} else {
-							i++;
-							last = parsePattern(pattern, '|', weigth);
-							if(length < last) {
-								length = last;
-							} 
-						}
-						break;
-					case ')':
-						return length;
-					case ']':
-						return 1;
-					case '[':
-						i++;
-						last = parsePattern(pattern, '[', weigth);
-					case '{':
-						pattern
-						break;
-					case '(':
-						i++;
-						last = parsePattern(pattern, '(', weigth);
-						break;
-					case '*':
-						last *= weigth;
-						break;
-					case '+':
-						last *= weigth > 0 ? weigth : 1;
-						break;
-					case '?':
-						last *= weigth > 0 ? 1 : 0;
-						break;
-					default:
-						last = 1;
-				}
-				
-				if(parent != '|') {
+			switch(pattern.charAt(i)) {
+				case '\\':
+					i++;
 					length += last;
-				}
+					last = 1;
+					break;
+				case '|':
+					i++;
+					if(parent == '|') {
+						return length + last;
+					} else {
+						int aux = length + last;
+						last = 0;
+						length = parsePattern(pattern, '|', weight);
+						if(weight == 0) {
+							if(aux < length) {
+								length = aux;
+							} 								
+						} else {
+							if(aux > length) {
+								length = aux;
+							} 								
+						}
+					}
+					break;
+				case ')':
+					i++;
+					return length + last;
+				case ']':
+					i++;
+					return 1;
+				case '[':
+					last = parsePattern(pattern, '[', weight);
+				case '{':
+					int index = pattern.indexOf("}", i);
+					if(index >= 0) {
+						String range = pattern.substring(i, index);
+						i = index;
+						index = range.indexOf(',');
+						if(index >= 0) {
+							if(weight == 0) {
+								last *= Integer.parseInt(range.split(",")[0]);
+							} else {
+								last *= Integer.parseInt(range.split(",")[1]);								
+							}
+						} else {
+							last *= Integer.parseInt(range);
+						}
+					}
+					break;
+				case '(':
+					last = parsePattern(pattern, '(', weight);
+					break;
+				case '*':
+					last *= weight;
+					break;
+				case '+':
+					last *= weight > 0 ? weight : 1;
+					break;
+				case '?':
+					last *= weight > 0 ? 1 : 0;
+					break;
+				default:
+					length += last;
+					last = 1;
+					break;
 			}
 		}
+		length += last;
 		
 		return length;
 	}
 
+	/**
+	 * Gets the type.
+	 * 
+	 * @param type
+	 *            the type
+	 * 
+	 * @return the type
+	 */
 	public static DataType getType(String type) {
-		return getType(type,".*");
+		return getType(type,"");
 	}
 
+	/**
+	 * Gets the type.
+	 * 
+	 * @param pattern
+	 *            the pattern
+	 * @param type
+	 *            the type
+	 * 
+	 * @return the type
+	 */
 	public static DataType getType(String type, String pattern) {
 		DataType datatype = datatypes.get(type + ";" + pattern);
 		
@@ -330,17 +404,52 @@ public class DataType {
 		return match;
 	}
 
+	/**
+	 * Gets the max.
+	 * 
+	 * @return the max
+	 */
 	public int getMax() {
 		return max;
 	}
 
+	/**
+	 * Gets the min.
+	 * 
+	 * @return the min
+	 */
 	public int getMin() {
 		return min;
 	}
 	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return definition;
+	}
+
+	/**
+	 * The main method.
+	 * 
+	 * @param args
+	 *            the args
+	 */
 	public static void main(String[] args) {
-		DataType test = DataType.getType("digits","1|2|8|9");
-		
-		System.out.println(test.parse("1"));
+		DataType test[] = {
+				/*DataType.getType("boolean")
+				,DataType.getType("date")
+				,DataType.getType("digits")
+				,DataType.getType("currency")
+				,DataType.getType("number")
+				,DataType.getType("phone")
+				,DataType.getType("time")
+				,DataType.getType("digits?length=1","1|2|8|9")
+				,*/ DataType.getType("digits?length=1")
+				};
+		for(DataType dt: test) {
+			System.out.printf("type: %s, min: %d, max: %d\n", dt, dt.getMin(), dt.getMax());
+		}
 	}
 }

@@ -145,19 +145,22 @@ public class AGIHandler
 		String timeout = javier.getProperty("timeout");
 		long time = 0;
 		DataType datatype = DataType.getType(type);
+		int digits = datatype.getMax() - buffer.length();
 		
 		if(timeout.indexOf("ms") >= 0) {
-			timeout.replaceFirst("ms", "");
+			timeout = timeout.replaceFirst("ms", "");
 			time = Long.parseLong(timeout);
 		} else {
 			if(timeout.indexOf("s") > 0) {
-				timeout.replaceFirst("s", "");
+				timeout = timeout.replaceFirst("s", "");
 				time = Long.parseLong(timeout) * 1000;
 			}
 		}		
 		
 		try {
-			buffer += agi.get_data("silence", time);
+			if(digits > 0) {
+				buffer += agi.get_data("silence", time, digits);
+			}
 			result = datatype.parse(buffer);
 			buffer = "";
 		} catch (Exception e) {
