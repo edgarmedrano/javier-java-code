@@ -476,6 +476,7 @@ public class Document {
 				case Choice:
 				case Error:
 				case Filled:
+				case Grammar:
 				case Help:
 				case NoInput:
 				case NoMatch:
@@ -558,6 +559,11 @@ public class Document {
 					fc.push(snst, "\ttry {");
 					fc.push(snst, "\t\tthis."
 							, childA.getNamedItem("name").getNodeValue()
+							, "_grammars = this.grammars + \";"
+							, collectGrammars(child)
+							, "\";");
+					fc.push(snst, "\t\tthis."
+							, childA.getNamedItem("name").getNodeValue()
 							, "_count = (!this."
 							, childA.getNamedItem("name").getNodeValue()
 							, "_count? 0 : this."
@@ -578,7 +584,9 @@ public class Document {
 							, childA.getNamedItem("slot") != null ? childA.getNamedItem("slot").getNodeValue() : ""
 							, "\","
 							, childA.getNamedItem("modal") != null ? childA.getNamedItem("modal").getNodeValue().toLowerCase() : "false"
-							, ");");
+							, ",this."
+							, childA.getNamedItem("name").getNodeValue()
+							, "_grammars);");
 					fc.push(snst, "\t\tif(filled) {");
 					fc.push(snst, "\t\t\t"
 							, childA.getNamedItem("name").getNodeValue()
@@ -724,6 +732,7 @@ public class Document {
 					fc.push(snst, "\t\tfunction _get(_field) { return eval(_field); }");
 					fc.push(snst, "\t\t_clear(this.fields);");
 					fc.push(snst, "\t\tvar _nextitem = true;");
+					fc.push(snst, "\t\tthis.grammars = _document_grammars + \";", collectGrammars(child), "\";");
 					fc.push(snst, "\t\tthis.count = (!this.count? 0 : this.count) + 1;");
 					fc.push(snst, "\t\tvar _count;");
 					fc.push(snst, "\t\twhile(_nextitem != false) {");
@@ -734,29 +743,30 @@ public class Document {
 					fc.push(this.parse(child,level + 5));
 					
 					if(childTag == Tag.Menu) {
-						/**********************
-						 * WARNING!!!!!!!!! GRAMMAR SUPPORT MUST BE IMPLEMENTED
-						 */
-						fc.push(snst, "\t\t\t\t\t\tfilled = \"\" + __browser__.getInput(\"type your choice\",\"\",\"digits?length=1\",\"\",true);");
+						fc.push(snst, "\t\t\t\t\t\tfilled = \"\" + __browser__.getInput(\"type your choice\",\"\",\"digits?length=1\",\"\",true,this.grammars);");
 						fc.push(snst, "\t\t\t\t\t\tif(filled) {");
 						fc.push(snst, "\t\t\t\t\t\t\tswitch(filled) { ");
 						for(int j = 0; j < childNL; j++) {
 							childC = childN.item(j);
 							childCA = childC.getAttributes();
 							if(childC.getNodeName().equals("choice")) {
-								fc.push(snst, "\t\t\t\t\t\t\t\tcase ");
 								if(childCA.getNamedItem("dtmf") != null) {
-									fc.push("\"");
+									fc.push(snst, "\t\t\t\t\t\t\t\tcase \"");
 									fc.push(childCA.getNamedItem("dtmf").getNodeValue());
-									fc.push("\"");
+									fc.push("\": ");
+								}
+								if(childC.hasChildNodes()) {
+									fc.push(snst, "\t\t\t\t\t\t\t\tcase \"");
+									fc.push(childC.getFirstChild().getNodeValue());
+									fc.push("\": ");
 								}
 								if(childCA.getNamedItem("next") != null) {
-									fc.push(": return \"");
+									fc.push("return \"");
 									fc.push(childCA.getNamedItem("next").getNodeValue());
 									fc.push("\";");
 								}
 								if(childCA.getNamedItem("expr") != null) {
-									fc.push(": return ");
+									fc.push("return ");
 									fc.push(childCA.getNamedItem("expr").getNodeValue().replaceAll("\n",snst + "\t"));
 									fc.push(";");
 								}
@@ -861,9 +871,9 @@ public class Document {
 					} else if(childA.getNamedItem("expr") != null) {
 					    /************************************************************
 						IT MUST BE:
-							result.push(snst, "return ");
-							result.push(childA.getNamedItem("expr").getNodeValue().replaceAll("\n",snst + "\t")));
-							result.push(";");
+							fc.push(snst, "return ");
+							fc.push(childA.getNamedItem("expr").getNodeValue().replaceAll("\n",snst + "\t")));
+							fc.push(";");
 						BUT I HAVE TO DO THIS WORKAROUND:
 						*************************************************************/
 						if(childA.getNamedItem("expr").getNodeValue().indexOf("#") >= 0
@@ -885,13 +895,6 @@ public class Document {
 								, childA.getNamedItem("expritem").getNodeValue().replaceAll("\n",snst + "\t")
 								, "; break;");
 					}
-					break;
-					
-				case Grammar:
-					//*************************************************************
-					//* Falta esta implementacion
-					//*************************************************************
-					fireWarningFound("Unsupported element: grammar");
 					break;
 				case If:
 					fc.push(snst, "if("
@@ -1033,6 +1036,7 @@ public class Document {
 				case Vxml:
 					fc.push(snst, "var _next = 0;");
 					fc.push(snst, "var _form = new Array();");
+					fc.push(snst, "var _document_grammars = \"", collectGrammars(child), "\";");
 					fc.push(snst, "function getQuery(_get, url, namelist) {");
 					fc.push(snst, "\tvar separator = url.indexOf(\"?\") >= 0 ? \"&\" : \"?\";");
 					fc.push(snst, "\turl = url.split(\"#\");");
@@ -1084,6 +1088,39 @@ public class Document {
 		}
 		
 		return fc; 
+	}
+	
+	protected FastConcatenation collectGrammars(Node node) {
+		final FastConcatenation fc = new FastConcatenation();
+		
+		final NodeList childs = node.getChildNodes();
+		final int n = childs.getLength();
+		Node child;
+		NamedNodeMap childA;
+		NodeList childN;
+		int childNL;
+		Node childC;
+		NamedNodeMap childCA;
+		Tag childTag;
+		
+		for(int i = 0; i < n ;i++) {
+		    child = childs.item(i);
+			childA = child.getAttributes();
+			childN = child.getChildNodes();
+			childNL = childN.getLength(); 
+			childTag = htTagEnum.get(child.getNodeName());
+			
+			switch(childTag) {
+				case Form:
+				case Menu:
+				case Field:
+					return fc; // do not collect inner grammars
+				case Grammar:
+					
+			}
+		}
+		
+		return fc;
 	}
 	
 	/**

@@ -438,7 +438,7 @@ public class DataType {
 	 */
 	public static void main(String[] args) {
 		DataType test[] = {
-				/*DataType.getType("boolean")
+				DataType.getType("boolean")
 				,DataType.getType("date")
 				,DataType.getType("digits")
 				,DataType.getType("currency")
@@ -446,7 +446,7 @@ public class DataType {
 				,DataType.getType("phone")
 				,DataType.getType("time")
 				,DataType.getType("digits?length=1","1|2|8|9")
-				,*/ DataType.getType("digits?length=1")
+				,DataType.getType("digits?length=1")
 				};
 		for(DataType dt: test) {
 			System.out.printf("type: %s, min: %d, max: %d\n", dt, dt.getMin(), dt.getMax());
