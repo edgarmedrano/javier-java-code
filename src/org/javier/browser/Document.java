@@ -11,6 +11,7 @@
 
 package org.javier.browser;
 
+import java.io.InputStreamReader;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
@@ -51,9 +52,9 @@ public class Document {
 	 */
 	static protected enum Tag {
 		_Text, _Comment, Assign, Audio, Block, Catch, Choice, Clear, 
-		Disconnect, Else, ElseIf, Enumerate, Error, Exit, Field, Filled, 
-		Form, GoTo, Grammar, Help, If, Initial, Link, Log, Menu, Meta, 
-		NoInput, NoMatch, Object, Option, Param, Prompt, Property, Record,
+		Data, Disconnect, Else, ElseIf, Enumerate, Error, Exit, Field, Filled, 
+		Foreach, Form, GoTo, Grammar, Help, If, Initial, Link, Log, Mark, Menu, 
+		Meta, NoInput, NoMatch, Object, Option, Param, Prompt, Property, Record,
 		Reprompt, Return, Script, Subdialog, Submit, Throw, Transfer, Value,
 		Var, Vxml, Xml
 	}
@@ -116,6 +117,9 @@ public class Document {
 	/** The properties. */
 	protected Properties properties;
 	
+	/** The meta-tags. */
+	protected Properties meta;
+	
 	/**
 	 * Default constructor rarely used.
 	 */
@@ -135,6 +139,11 @@ public class Document {
 		state = State.CREATED;
 		//seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"), false);
 		seJavaScript = sem.getEngineByName("JavaScript");
+		try {
+			seJavaScript.eval(new InputStreamReader(Document.class.getResourceAsStream("document.js")));
+		} catch (ScriptException e) {
+			e.printStackTrace();
+		}
 	}
 		
 	/**
@@ -164,6 +173,7 @@ public class Document {
 		this.timeout = timeout;
 		this.xml = null;
 		properties = new Properties();
+		meta = new Properties();
 	}
 	
 	/**
@@ -221,7 +231,7 @@ public class Document {
 		Bindings newBindings = seJavaScript.createBindings();
 		seJavaScript.setBindings(newBindings, ScriptContext.ENGINE_SCOPE );
 		seJavaScript.put("__browser__", __browser__);
-		seJavaScript.put("__document__", Document.class);
+		seJavaScript.put("__document__", this);
 		seJavaScript.eval(jsFunction);
 		try {
 			setState(State.EXECUTING);
@@ -904,13 +914,14 @@ public class Document {
 					fc.push(snst, "}");
 					break;
 				case Meta:
-					/*
-					result.push(snst, "this."
-						, childA.getNamedItem("name").getNodeValue()
-						, " = \""
-						, childA.getNamedItem("value").getNodeValue().replaceAll("\n",snst + "\t")
-						, "\";");
-					*/
+					if(childA.getNamedItem("name") != null
+							&& childA.getNamedItem("content") != null) {
+						fc.push(snst, "__document__.setMeta(\""
+								, childA.getNamedItem("name").getNodeValue()
+								, "\",\""
+								, childA.getNamedItem("content").getNodeValue().replaceAll("\n",snst + "\t")
+								, "\");");
+					}
 					break;				
 				case Prompt:
 					if(childA.getNamedItem("timeout") != null) {
@@ -935,7 +946,7 @@ public class Document {
 					}
 					break;
 				case Property:
-					fc.push(snst, "__browser__.setProperty(\""
+					fc.push(snst, "__document__.setProperty(\""
 						, childA.getNamedItem("name").getNodeValue()
 						, "\",\""
 						, childA.getNamedItem("value").getNodeValue()
@@ -1110,6 +1121,13 @@ public class Document {
 			childNL = childN.getLength(); 
 			childTag = htTagEnum.get(child.getNodeName());
 			
+			if(childTag == Tag.Form 
+				|| childTag == Tag.Menu 
+				|| childTag == Tag.Field) {
+				break;
+			}
+			
+			
 			switch(childTag) {
 				case Form:
 				case Menu:
@@ -1201,5 +1219,26 @@ public class Document {
 	 */
 	public void setProperty(String name, String value) {
 		properties.setProperty(name, value);
+	}
+
+	/**
+	 * Gets the meta-tag value.
+	 * 
+	 * @param name the meta-tag name
+	 * 
+	 * @return the property
+	 */
+	public String getMeta(String name) {
+		return meta.getProperty(name, "");
+	}
+
+	/**
+	 * Sets the meta-tag value.
+	 * 
+	 * @param name  the meta-tag name
+	 * @param value the value
+	 */
+	public void setMeta(String name, String value) {
+		meta.setProperty(name, value);
 	}
 }
