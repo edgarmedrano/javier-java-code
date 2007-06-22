@@ -567,11 +567,32 @@ public class Document {
 					}	
 					
 					fc.push(snst, "\ttry {");
+					
+					if(childA.getNamedItem("modal") != null 
+							&& childA.getNamedItem("modal").getNodeValue().equalsIgnoreCase("true")) {
+						fc.push(snst, "\t\tthis."
+								, childA.getNamedItem("name").getNodeValue()
+								, "_grammars = new Array("
+								, collectGrammars(child)
+								, ");");
+					} else {
+						fc.push(snst, "\t\tthis."
+								, childA.getNamedItem("name").getNodeValue()
+								, "_grammars = this.grammars.slice(0).push("
+								, collectGrammars(child)
+								, ");");
+					}
+											
 					fc.push(snst, "\t\tthis."
 							, childA.getNamedItem("name").getNodeValue()
-							, "_grammars = this.grammars + \";"
-							, collectGrammars(child)
-							, "\";");
+							, "_min = __dt_length("
+							, childA.getNamedItem("name").getNodeValue()
+							, "_grammars, 0);");
+					fc.push(snst, "\t\tthis."
+							, childA.getNamedItem("name").getNodeValue()
+							, "_max = __dt_length("
+							, childA.getNamedItem("name").getNodeValue()
+							, "_grammars, 10);");
 					fc.push(snst, "\t\tthis."
 							, childA.getNamedItem("name").getNodeValue()
 							, "_count = (!this."
@@ -597,6 +618,14 @@ public class Document {
 							, ",this."
 							, childA.getNamedItem("name").getNodeValue()
 							, "_grammars);");
+					fc.push(snst, "\t\tfilled = \"\" + "
+							, "__parse_input__(filled,"
+							, childA.getNamedItem("name").getNodeValue()
+							, "_grammars,\""
+							, childA.getNamedItem("slot") != null ? childA.getNamedItem("slot").getNodeValue() : childA.getNamedItem("name").getNodeValue()
+							, "\","
+							, childA.getNamedItem("modal") != null ? childA.getNamedItem("modal").getNodeValue().toLowerCase() : "false"
+							, ");");
 					fc.push(snst, "\t\tif(filled) {");
 					fc.push(snst, "\t\t\t"
 							, childA.getNamedItem("name").getNodeValue()
@@ -742,7 +771,7 @@ public class Document {
 					fc.push(snst, "\t\tfunction _get(_field) { return eval(_field); }");
 					fc.push(snst, "\t\t_clear(this.fields);");
 					fc.push(snst, "\t\tvar _nextitem = true;");
-					fc.push(snst, "\t\tthis.grammars = _document_grammars + \";", collectGrammars(child), "\";");
+					fc.push(snst, "\t\tthis.grammars = _document_grammars.slice(0).push(", collectGrammars(child), ");");
 					fc.push(snst, "\t\tthis.count = (!this.count? 0 : this.count) + 1;");
 					fc.push(snst, "\t\tvar _count;");
 					fc.push(snst, "\t\twhile(_nextitem != false) {");
@@ -1047,7 +1076,7 @@ public class Document {
 				case Vxml:
 					fc.push(snst, "var _next = 0;");
 					fc.push(snst, "var _form = new Array();");
-					fc.push(snst, "var _document_grammars = \"", collectGrammars(child), "\";");
+					fc.push(snst, "var _document_grammars = new Array(", collectGrammars(child), ");");
 					fc.push(snst, "function getQuery(_get, url, namelist) {");
 					fc.push(snst, "\tvar separator = url.indexOf(\"?\") >= 0 ? \"&\" : \"?\";");
 					fc.push(snst, "\turl = url.split(\"#\");");
@@ -1113,28 +1142,173 @@ public class Document {
 		Node childC;
 		NamedNodeMap childCA;
 		Tag childTag;
+
+		if(htTagEnum.get(node.getNodeName()) == Tag.Field) {
+			FastConcatenation fcOptions = new FastConcatenation("");
+			
+			for(int i = 0; i < n ;i++) {
+			    child = childs.item(i);
+				childA = child.getAttributes();
+				childN = child.getChildNodes();
+				childNL = childN.getLength(); 
+				childTag = htTagEnum.get(child.getNodeName());			
+				
+				if(childTag == Tag.Option) {
+					String value = "";
+					String text = "";
+					
+					for(int j = 0; j < childNL ;j++) {
+						if(htTagEnum.get(childN.item(j).getNodeName()) == Tag._Text) {
+							text += childN.item(j).getNodeValue().trim();
+						}
+					}
+					
+					if(childA.getNamedItem("value") != null) {
+						value = childA.getNamedItem("value").getNodeValue();
+					} else {
+						value = text;
+					}
+					
+					if(childA.getNamedItem("dtmf") != null) {
+						if(fcOptions.length() > 0) {
+							fcOptions.push(",");
+						}
+						
+						fcOptions.push("{ \"type\":\"dtmf\", \"regexp\":/"
+								, childA.getNamedItem("dtmf").getNodeValue()
+								, "/, \"value\":\""
+								, value
+								, "\"}");
+					}
+					
+					if(!value.equals("")) {
+						if(fcOptions.length() > 0) {
+							fcOptions.push(", ");
+						}
+						
+						fcOptions.push("{ \"type\":\"voice\", \"regexp\":/"
+								, text
+								, "/, \"value\":\""
+								, value
+								, "\"}");
+					}
+				}
+			}
+			
+			if(fcOptions.length() > 0) {
+				fc.push("{ \"event\":\"\", \"next\":\"\""
+						, ", \"eventexpr\":\"\", \"expr\":\"\", \"rule\": ["
+						, fcOptions
+						, "], \"weight\":1.0, \"scope\":20 }");
+			}
+			
+			//IMPLEMENT BUILTIN GRAMMARS HERE
+			childA = node.getAttributes();
+			if(childA.getNamedItem("type") != null) {
+				
+			}
+		}
 		
 		for(int i = 0; i < n ;i++) {
 		    child = childs.item(i);
 			childA = child.getAttributes();
 			childN = child.getChildNodes();
 			childNL = childN.getLength(); 
-			childTag = htTagEnum.get(child.getNodeName());
-			
-			if(childTag == Tag.Form 
-				|| childTag == Tag.Menu 
-				|| childTag == Tag.Field) {
-				break;
-			}
-			
+			childTag = htTagEnum.get(child.getNodeName());			
 			
 			switch(childTag) {
 				case Form:
 				case Menu:
 				case Field:
-					return fc; // do not collect inner grammars
+				case Option:
+					continue; // do not collect inner grammars
 				case Grammar:
+					if(childNL == 1) {
+						
+					}
+					break;
+				case Link:
+				case Choice:
+					FastConcatenation fcOptions = new FastConcatenation();
+					String next = "";
+					String expr = "";
+					String event = "";
+					String eventexpr = "";
+					String text = "";
 					
+					for(int j = 0; j < childNL ;j++) {
+						Tag tag = htTagEnum.get(childN.item(j).getNodeName()); 
+						if(tag == Tag._Text) {
+							text += childN.item(j).getNodeValue().trim();
+						} else if(tag == Tag.Grammar) {
+							
+						}
+					}
+					
+					if(childA.getNamedItem("next") != null) {
+						next = childA.getNamedItem("next").getNodeValue();
+					}
+					
+					if(childA.getNamedItem("expr") != null) {
+						expr = childA.getNamedItem("expr").getNodeValue();
+					}
+					
+					if(childA.getNamedItem("event") != null) {
+						event = childA.getNamedItem("event").getNodeValue();
+					}
+					
+					if(childA.getNamedItem("eventexpr") != null) {
+						eventexpr = childA.getNamedItem("eventexpr").getNodeValue();
+					}
+					
+					if(childA.getNamedItem("dtmf") != null) {
+						if(fcOptions.length() > 0) {
+							fcOptions.push(",");
+						}
+						
+						fcOptions.push("{ \"type\":\"dtmf\", \"regexp\":/"
+								, childA.getNamedItem("dtmf").getNodeValue()
+								, "/, \"value\":\"\"}");
+					}
+					
+					if(!text.equals("")) {
+						if(fcOptions.length() > 0) {
+							fcOptions.push(", ");
+						}
+						
+						fcOptions.push("{ \"type\":\"voice\", \"regexp\":/"
+								, text
+								, "/, \"value\":\"\"}");
+					}
+					
+					if(fcOptions.length() > 0) {
+						if(fc.length() > 0) {
+							fc.push(", ");
+						}
+						fc.push("{ \"event\":\""
+								, event
+								, "\", \"next\":\""
+								, next
+								, "\""
+								, ", \"eventexpr\":\""
+								, eventexpr
+								, "\", \"expr\":\""
+								, expr
+								, "\", \"rule\": ["
+								, fcOptions
+								, "], \"weight\":1.0, \"scope\":20 }");
+					}
+										
+					break;
+					default:
+						/*
+						if(child.hasChildNodes()) {
+							FastConcatenation fc_child = collectGrammars(child);
+							if(fc_child.length() > 0) {
+								if(fc.)
+							}
+						}
+						*/
 			}
 		}
 		

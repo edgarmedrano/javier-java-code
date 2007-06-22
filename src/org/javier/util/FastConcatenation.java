@@ -104,4 +104,13 @@ public final class FastConcatenation {
 		stb = new StringBuilder(strJoin);
 		return strJoin.replaceAll(regex, replacement);
 	}
+
+	/**
+	 * Gets the length of current concatenation
+	 * 
+	 * @return the length of current concatenation
+	 */
+	public int length() {
+		return stb.length();
+	}
 }
