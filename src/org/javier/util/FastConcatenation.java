@@ -54,6 +54,19 @@ public final class FastConcatenation {
 	}
 	
 	/**
+	 * Constructs a FastConcatenation object initialized with the string 
+	 * representation of the specified arguments to the concatenated string.
+	 * 
+	 * @param args the objects to be added
+	 */
+	public FastConcatenation(Object ... args) {
+		this();
+		for(int i = 0; i < args.length; i++) {
+			stb.append(args[i]);
+		}
+	}
+	
+	/**
 	 * Appends the string representation of the specified arguments 
 	 * to the concatenated string.
 	 * 

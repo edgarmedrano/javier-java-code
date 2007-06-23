@@ -25,6 +25,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
+import org.javier.browser.DataType.Type;
 import org.javier.browser.event.DocumentListener;
 import org.javier.util.EscapeUnescape;
 import org.javier.util.FastConcatenation;
@@ -58,6 +59,19 @@ public class Document {
 		Reprompt, Return, Script, Subdialog, Submit, Throw, Transfer, Value,
 		Var, Vxml, Xml
 	}
+
+	static public enum Type {
+		Boolean, Date, Digits, Currency, Number, Phone, Time, Custom
+	}
+	
+	/** Maps the tag names to {@link Tag} enum. */
+	static protected final Hashtable<String, Type> htTypeEnum 
+		= new Hashtable<String, Type>(Type.values().length);
+	static {
+		for(Type type: Type.values()) {
+			htTypeEnum.put(type.toString().toLowerCase(),type);
+		}
+	}	
 	
 	/**
 	 * The script engine manager that will produce all script engines used to
@@ -582,17 +596,39 @@ public class Document {
 								, collectGrammars(child)
 								, ");");
 					}
-											
-					fc.push(snst, "\t\tthis."
-							, childA.getNamedItem("name").getNodeValue()
-							, "_min = __dt_length("
-							, childA.getNamedItem("name").getNodeValue()
-							, "_grammars, 0);");
-					fc.push(snst, "\t\tthis."
-							, childA.getNamedItem("name").getNodeValue()
-							, "_max = __dt_length("
-							, childA.getNamedItem("name").getNodeValue()
-							, "_grammars, 10);");
+										
+					if(childA.getNamedItem("type") != null) {
+						Properties typeProperties = parseType(childA.getNamedItem("type").getNodeValue());
+						String min = typeProperties.getProperty("minlength", "");
+						String max = typeProperties.getProperty("maxlength", "");
+						if(min == "") {
+							fc.push(snst, "\t\tthis."
+									, childA.getNamedItem("name").getNodeValue()
+									, "_min = __grammar_length("
+									, childA.getNamedItem("name").getNodeValue()
+									, "_grammars, 0);");
+						} else {
+							fc.push(snst, "\t\tthis."
+									, childA.getNamedItem("name").getNodeValue()
+									, "_min = "
+									, min
+									, ";");							
+						}
+						if(max == "") {
+							fc.push(snst, "\t\tthis."
+									, childA.getNamedItem("name").getNodeValue()
+									, "_max = __grammar_length("
+									, childA.getNamedItem("name").getNodeValue()
+									, "_grammars, 10);");
+						} else {
+							fc.push(snst, "\t\tthis."
+									, childA.getNamedItem("name").getNodeValue()
+									, "_max = "
+									, max
+									, ";");							
+						}
+					}
+					
 					fc.push(snst, "\t\tthis."
 							, childA.getNamedItem("name").getNodeValue()
 							, "_count = (!this."
@@ -609,23 +645,17 @@ public class Document {
 							, childA.getNamedItem("name").getNodeValue()
 							, "\","
 							, childA.getNamedItem("name").getNodeValue()
-							, ",\""
-							, childA.getNamedItem("type") != null ? childA.getNamedItem("type").getNodeValue() : ""
-							, "\",\""
-							, childA.getNamedItem("slot") != null ? childA.getNamedItem("slot").getNodeValue() : ""
-							, "\","
-							, childA.getNamedItem("modal") != null ? childA.getNamedItem("modal").getNodeValue().toLowerCase() : "false"
-							, ",this."
+							, ","
 							, childA.getNamedItem("name").getNodeValue()
-							, "_grammars);");
+							, "_min,"
+							, childA.getNamedItem("name").getNodeValue()
+							, "_max);");
 					fc.push(snst, "\t\tfilled = \"\" + "
 							, "__parse_input__(filled,"
 							, childA.getNamedItem("name").getNodeValue()
 							, "_grammars,\""
 							, childA.getNamedItem("slot") != null ? childA.getNamedItem("slot").getNodeValue() : childA.getNamedItem("name").getNodeValue()
-							, "\","
-							, childA.getNamedItem("modal") != null ? childA.getNamedItem("modal").getNodeValue().toLowerCase() : "false"
-							, ");");
+							, "\");");
 					fc.push(snst, "\t\tif(filled) {");
 					fc.push(snst, "\t\t\t"
 							, childA.getNamedItem("name").getNodeValue()
@@ -1139,8 +1169,6 @@ public class Document {
 		NamedNodeMap childA;
 		NodeList childN;
 		int childNL;
-		Node childC;
-		NamedNodeMap childCA;
 		Tag childTag;
 
 		if(htTagEnum.get(node.getNodeName()) == Tag.Field) {
@@ -1174,9 +1202,9 @@ public class Document {
 							fcOptions.push(",");
 						}
 						
-						fcOptions.push("{ \"type\":\"dtmf\", \"regexp\":/"
+						fcOptions.push("{ type:\"dtmf\", regexp:/"
 								, childA.getNamedItem("dtmf").getNodeValue()
-								, "/, \"value\":\""
+								, "/, value:\""
 								, value
 								, "\"}");
 					}
@@ -1186,9 +1214,9 @@ public class Document {
 							fcOptions.push(", ");
 						}
 						
-						fcOptions.push("{ \"type\":\"voice\", \"regexp\":/"
+						fcOptions.push("{ type:\"voice\", regexp:/"
 								, text
-								, "/, \"value\":\""
+								, "/, value:\""
 								, value
 								, "\"}");
 					}
@@ -1196,15 +1224,25 @@ public class Document {
 			}
 			
 			if(fcOptions.length() > 0) {
-				fc.push("{ \"event\":\"\", \"next\":\"\""
-						, ", \"eventexpr\":\"\", \"expr\":\"\", \"rule\": ["
+				fc.push("{ event:\"\", next:\"\""
+						, ", eventexpr:\"\", expr:\"\", rules: ["
 						, fcOptions
-						, "], \"weight\":1.0, \"scope\":20 }");
+						, "], weight:1.0, scope:20 }");
 			}
 			
 			//IMPLEMENT BUILTIN GRAMMARS HERE
 			childA = node.getAttributes();
 			if(childA.getNamedItem("type") != null) {
+				if(fc.length() > 0) {
+					fc.push(", ");
+				}
+
+				
+				
+				fc.push("{ event:\"\", next:\"\""
+						, ", eventexpr:\"\", expr:\"\", rules: ["
+						, parseType(childA.getNamedItem("type").getNodeValue()).getProperty("grammar")
+						, "], weight:1.0, scope:20 }");
 				
 			}
 		}
@@ -1223,9 +1261,38 @@ public class Document {
 				case Option:
 					continue; // do not collect inner grammars
 				case Grammar:
-					if(childNL == 1) {
-						
+					
+					/*********************************************
+					 * RIGHT NOW ONLY BNF SIMPLE GRAMMARS ARE SUPPORTED
+					 * 
+					 */
+					/*
+						fc.push("{ type:\""
+							, childA.getNamedItem("mode") == null ? "dtmf voice" : childA.getNamedItem("mode").getNodeValue() 
+							, "\", regexp:/"
+							, grammar
+							, "/, value:\"\"}");
+					 */
+					String grammar = "";
+					
+					for(int j = 0; j < childNL ;j++) {
+						if(htTagEnum.get(childN.item(j).getNodeName()) == Tag._Text) {
+							grammar += childN.item(j).getNodeValue().trim();
+						}
 					}
+					
+					if(!grammar.equals("")) {
+						if(fc.length() > 0) {
+							fc.push(", ");
+						}
+						
+						fc.push("{ type:\""
+							, childA.getNamedItem("mode") == null ? "dtmf voice" : childA.getNamedItem("mode").getNodeValue() 
+							, "\", regexp:/"
+							, grammar
+							, "/, value:\"\"}");
+					} 
+					
 					break;
 				case Link:
 				case Choice:
@@ -1240,8 +1307,6 @@ public class Document {
 						Tag tag = htTagEnum.get(childN.item(j).getNodeName()); 
 						if(tag == Tag._Text) {
 							text += childN.item(j).getNodeValue().trim();
-						} else if(tag == Tag.Grammar) {
-							
 						}
 					}
 					
@@ -1266,37 +1331,47 @@ public class Document {
 							fcOptions.push(",");
 						}
 						
-						fcOptions.push("{ \"type\":\"dtmf\", \"regexp\":/"
+						fcOptions.push("{ type:\"dtmf\", regexp:/"
 								, childA.getNamedItem("dtmf").getNodeValue()
-								, "/, \"value\":\"\"}");
+								, "/, value:\"\"}");
 					}
 					
-					if(!text.equals("")) {
+					if(text.equals("")) {
+						if(child.hasChildNodes()) {
+							FastConcatenation fc_grammar = collectGrammars(child);
+							if(fc_grammar.length() > 0) {
+								if(fcOptions.length() > 0) {
+									fcOptions.push(", ");
+								}
+								fcOptions.push(fc_grammar);
+							}
+						}
+					} else {
 						if(fcOptions.length() > 0) {
 							fcOptions.push(", ");
 						}
 						
-						fcOptions.push("{ \"type\":\"voice\", \"regexp\":/"
+						fcOptions.push("{ type:\"voice\", regexp:/"
 								, text
-								, "/, \"value\":\"\"}");
+								, "/, value:\"\"}");
 					}
 					
 					if(fcOptions.length() > 0) {
 						if(fc.length() > 0) {
 							fc.push(", ");
 						}
-						fc.push("{ \"event\":\""
+						fc.push("{ event:\""
 								, event
-								, "\", \"next\":\""
+								, "\", next:\""
 								, next
 								, "\""
-								, ", \"eventexpr\":\""
+								, ", eventexpr:\""
 								, eventexpr
-								, "\", \"expr\":\""
+								, "\", expr:\""
 								, expr
-								, "\", \"rule\": ["
+								, "\", rules: ["
 								, fcOptions
-								, "], \"weight\":1.0, \"scope\":20 }");
+								, "], weight:1.0, scope:20 }");
 					}
 										
 					break;
@@ -1315,6 +1390,105 @@ public class Document {
 		return fc;
 	}
 	
+	private Properties parseType(String type) {
+		int index;
+		String[] args;
+		Type typeEnum;
+		Properties typeProperties = new Properties();
+		int min;
+		int max;
+		FastConcatenation fc = new FastConcatenation();
+		
+		index = type.indexOf('?');
+		if(index >= 0) {
+			args = type.substring(index + 1).split(";");
+			type = type.substring(0, index);
+			for(String arg : args) {
+				index = arg.indexOf('=');
+				if(index >= 0) {
+					typeProperties.setProperty(arg.substring(0, index), arg.substring(index + 1));
+				} else {
+					typeProperties.setProperty(arg, "");
+				}
+			}
+		}
+		
+		index = type.lastIndexOf('/');
+		if(index >= 0) {
+			type = type.substring(index + 1);
+		}
+		
+		typeEnum = htTypeEnum.get(type);
+		
+		if(typeEnum == null) {
+			typeEnum = Type.Custom;
+		}
+
+		switch(typeEnum) {
+			case Boolean:
+				fc.push("{ type:\"dtmf\", regexp:/"
+						, typeProperties.getProperty("y","1")
+						, "/, value:true}");
+				fc.push("{ type:\"dtmf\", regexp:/"
+						, typeProperties.getProperty("n","2")
+						, "/, value:false}");
+				fc.push("{ type:\"voice\", regexp:/"
+						, typeProperties.getProperty("y","yes")
+						, "/, value:true}");
+				fc.push("{ type:\"voice\", regexp:/"
+						, typeProperties.getProperty("n","no")
+						, "/, value:false}");
+				break;
+			case Currency:
+				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
+				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","12")));
+				fc.push("{ type:\"dtmf voice\", regexp:/"
+						, "d{", min, ",", max, "}((.|*)d{0,2})?"
+						, "/, value:\"\"}");
+				break;
+			case Date:
+				fc.push("{ type:\"dtmf voice\", regexp:/"
+						, "d{0,4}[- /.]?(0[1-9]|1[012])[- /.]?(0[1-9]|[12][0-9]|3[01])"
+						, "/, value:\"\"}");
+				fc.push("{ type:\"voice\", regexp:/"
+						, "d{0,4}[- /.]?(0[1-9]|1[012])[- /.]?(0[1-9]|[12][0-9]|3[01])"
+						, "/, value:\"\"}");
+				break;
+			case Digits:
+				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
+				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","255")));
+				fc.push("{ type:\"dtmf voice\", regexp:/"
+						, "d{" + min + "," + max + "}"
+						, "/, value:\"\"}");
+				break;
+			case Number:
+				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
+				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","9")));
+				fc.push("{ type:\"dtmf voice\", regexp:/"
+						, "d{" + min + "," + max + "}"
+						, "/, value:\"\"}");
+				break;
+			case Phone:
+				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
+				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","13")));
+				fc.push("{ type:\"dtmf voice\", regexp:/"
+						, "d{" + min + "," + max + "}"
+						, "/, value:\"\"}");
+				break;
+			case Time:
+				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
+				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","6")));
+				fc.push("{ type:\"dtmf voice\", regexp:/"
+						, "d{" + min + "," + max + "}"
+						, "/, value:\"\"}");
+				break;
+		}
+		
+		typeProperties.put("grammar", fc.toString());
+		
+		return typeProperties;
+	}
+
 	/**
 	 * Removes a document's listener.
 	 * 
