@@ -394,27 +394,19 @@ public class Javier
 	}
 	
 	/**
-	 * Gets the input.
-	 * 
-	 * @param text the text used to prompt
-	 * @return the captured input
-	 * @throws IOException 
-	 */
-	public String getInput(String text) throws IOException {
-		return getInput(text,"","","",false);
-	}
-
-	/**
 	 * Gets the input. This is intended to be called while evaluating
 	 * the document's code.
 	 * 
-	 * @param text the text to be used while prompting
+	 * @param text  the text
 	 * @param value the default value
+	 * @param min   the minimum value's length
+	 * @param max   the maximum value's length
+	 * 
 	 * @return the captured input
 	 * @throws IOException 
 	 */
-	public String getInput(String text,String value, String type, String slot, boolean modal) throws IOException {
-		String result = inHandler.getInput(text,value, type, slot, modal);
+	public String getInput(String text,String value, int min, int max) throws IOException {
+		String result = inHandler.getInput(text,value, min, max);
 		clearText();
 		return result;
 	}

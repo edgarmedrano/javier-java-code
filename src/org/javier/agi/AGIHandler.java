@@ -17,7 +17,6 @@ import static org.javier.jacob.SAPI.SpeechVoiceSpeakFlags.*;
 
 import java.io.File;
 import java.io.IOException;
-import org.javier.browser.DataType;
 import org.javier.browser.Javier;
 import org.javier.browser.event.JavierListener;
 import org.javier.browser.event.OutputListener;
@@ -132,20 +131,41 @@ public class AGIHandler
 	/**
 	 * Gets the input.
 	 * 
-	 * @param text
-	 *            the text
-	 * @param value
-	 *            the value
+	 * @param text  the text
 	 * 
 	 * @return the input
 	 */
+	public String getInput(String text) throws IOException {
+		return getInput(text,"");
+	}
 
-	public String getInput(String text, String value, String type, String slot, boolean modal) throws IOException {
+	/**
+	 * Gets the input.
+	 * 
+	 * @param text  the text
+	 * @param value the default value
+	 * 
+	 * @return the input
+	 */
+	public String getInput(String text, String value) throws IOException {
+		return getInput(text, value, 0, 32767);		
+	}
+
+	/**
+	 * Gets the input.
+	 * 
+	 * @param text  the text
+	 * @param value the default value
+	 * @param min   the minimum value's length
+	 * @param max   the maximum value's length
+	 * 
+	 * @return the input
+	 */
+	public String getInput(String text, String value, int min, int max) throws IOException {
 		String result = value;
 		String timeout = javier.getProperty("timeout");
 		long time = 0;
-		DataType datatype = DataType.getType(type);
-		int digits = datatype.getMax() - buffer.length();
+		int digits = max - buffer.length();
 		
 		if(timeout.indexOf("ms") >= 0) {
 			timeout = timeout.replaceFirst("ms", "");
@@ -161,7 +181,7 @@ public class AGIHandler
 			if(digits > 0) {
 				buffer += agi.get_data("silence", time, digits);
 			}
-			result = datatype.parse(buffer);
+			result = buffer;
 			buffer = "";
 		} catch (Exception e) {
 			e.printStackTrace();

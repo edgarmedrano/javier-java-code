@@ -30,7 +30,40 @@ public class ConsoleInputHandler implements InputHandler {
 		}
 	}
 	
-	public String getInput(String text, String value, String type, String slot, boolean modal) throws IOException {
+	/**
+	 * Gets the input.
+	 * 
+	 * @param text  the text
+	 * 
+	 * @return the input
+	 */
+	public String getInput(String text) throws IOException {
+		return getInput(text,"");
+	}
+
+	/**
+	 * Gets the input.
+	 * 
+	 * @param text  the text
+	 * @param value the default value
+	 * 
+	 * @return the input
+	 */
+	public String getInput(String text, String value) throws IOException {
+		return getInput(text, value, 0, 32767);		
+	}
+
+	/**
+	 * Gets the input.
+	 * 
+	 * @param text  the text
+	 * @param value the default value
+	 * @param min   the minimum value's length
+	 * @param max   the maximum value's length
+	 * 
+	 * @return the input
+	 */
+	public String getInput(String text, String value, int min, int max) throws IOException {
 		String result = "";
 		
 		if(console != null) {

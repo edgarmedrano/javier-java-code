@@ -25,10 +25,10 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 
-import org.javier.browser.DataType.Type;
 import org.javier.browser.event.DocumentListener;
 import org.javier.util.EscapeUnescape;
 import org.javier.util.FastConcatenation;
+import org.javier.util.ScriptDebugger;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -151,13 +151,8 @@ public class Document {
 	public Document(String url) {
 		this(url,"GET","",0,0,0);
 		state = State.CREATED;
-		//seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"), false);
-		seJavaScript = sem.getEngineByName("JavaScript");
-		try {
-			seJavaScript.eval(new InputStreamReader(Document.class.getResourceAsStream("document.js")));
-		} catch (ScriptException e) {
-			e.printStackTrace();
-		}
+		seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"), true);
+		//seJavaScript = sem.getEngineByName("JavaScript");
 	}
 		
 	/**
@@ -244,6 +239,13 @@ public class Document {
 				+ "\n}";
 		Bindings newBindings = seJavaScript.createBindings();
 		seJavaScript.setBindings(newBindings, ScriptContext.ENGINE_SCOPE );
+		
+		try {
+			seJavaScript.eval(new InputStreamReader(Document.class.getResourceAsStream("document.js")));
+		} catch (ScriptException e) {
+			e.printStackTrace();
+		}
+		
 		seJavaScript.put("__browser__", __browser__);
 		seJavaScript.put("__document__", this);
 		seJavaScript.eval(jsFunction);
@@ -592,7 +594,10 @@ public class Document {
 					} else {
 						fc.push(snst, "\t\tthis."
 								, childA.getNamedItem("name").getNodeValue()
-								, "_grammars = this.grammars.slice(0).push("
+								, "_grammars = this.grammars.slice(0);");
+						fc.push(snst, "\t\tthis."
+								, childA.getNamedItem("name").getNodeValue()
+								, "_grammars.push("
 								, collectGrammars(child)
 								, ");");
 					}
@@ -604,9 +609,9 @@ public class Document {
 						if(min == "") {
 							fc.push(snst, "\t\tthis."
 									, childA.getNamedItem("name").getNodeValue()
-									, "_min = __grammar_length("
+									, "_min = __grammar_length(this."
 									, childA.getNamedItem("name").getNodeValue()
-									, "_grammars, 0);");
+									, "_grammars, 0, __browser__.getProperty(\"inputmode\"));");
 						} else {
 							fc.push(snst, "\t\tthis."
 									, childA.getNamedItem("name").getNodeValue()
@@ -617,9 +622,9 @@ public class Document {
 						if(max == "") {
 							fc.push(snst, "\t\tthis."
 									, childA.getNamedItem("name").getNodeValue()
-									, "_max = __grammar_length("
+									, "_max = __grammar_length(this."
 									, childA.getNamedItem("name").getNodeValue()
-									, "_grammars, 10);");
+									, "_grammars, 10, __browser__.getProperty(\"inputmode\"));");
 						} else {
 							fc.push(snst, "\t\tthis."
 									, childA.getNamedItem("name").getNodeValue()
@@ -645,17 +650,17 @@ public class Document {
 							, childA.getNamedItem("name").getNodeValue()
 							, "\","
 							, childA.getNamedItem("name").getNodeValue()
-							, ","
+							, ", this."
 							, childA.getNamedItem("name").getNodeValue()
-							, "_min,"
+							, "_min, this."
 							, childA.getNamedItem("name").getNodeValue()
 							, "_max);");
 					fc.push(snst, "\t\tfilled = \"\" + "
-							, "__parse_input__(filled,"
+							, "__parse_input(filled, this."
 							, childA.getNamedItem("name").getNodeValue()
-							, "_grammars,\""
+							, "_grammars, \""
 							, childA.getNamedItem("slot") != null ? childA.getNamedItem("slot").getNodeValue() : childA.getNamedItem("name").getNodeValue()
-							, "\");");
+							, "\", __browser__.getProperty(\"inputmode\"));");
 					fc.push(snst, "\t\tif(filled) {");
 					fc.push(snst, "\t\t\t"
 							, childA.getNamedItem("name").getNodeValue()
@@ -801,7 +806,8 @@ public class Document {
 					fc.push(snst, "\t\tfunction _get(_field) { return eval(_field); }");
 					fc.push(snst, "\t\t_clear(this.fields);");
 					fc.push(snst, "\t\tvar _nextitem = true;");
-					fc.push(snst, "\t\tthis.grammars = _document_grammars.slice(0).push(", collectGrammars(child), ");");
+					fc.push(snst, "\t\tthis.grammars = _document_grammars.slice(0);");
+					fc.push(snst, "\t\tthis.grammars.push(", collectGrammars(child), ");");
 					fc.push(snst, "\t\tthis.count = (!this.count? 0 : this.count) + 1;");
 					fc.push(snst, "\t\tvar _count;");
 					fc.push(snst, "\t\twhile(_nextitem != false) {");
@@ -812,7 +818,10 @@ public class Document {
 					fc.push(this.parse(child,level + 5));
 					
 					if(childTag == Tag.Menu) {
-						fc.push(snst, "\t\t\t\t\t\tfilled = \"\" + __browser__.getInput(\"type your choice\",\"\",\"digits?length=1\",\"\",true,this.grammars);");
+						fc.push(snst, "\t\t\t\t\t\tthis.menu_choice_min = __grammar_length(this.grammars,0, __browser__.getProperty(\"inputmode\"));");						
+						fc.push(snst, "\t\t\t\t\t\tthis.menu_choice_max = __grammar_length(this.grammars,10, __browser__.getProperty(\"inputmode\"));");						
+						fc.push(snst, "\t\t\t\t\t\tfilled = \"\" + __browser__.getInput(\"type your choice\",\"\", this.menu_choice_min, this.menu_choice_max);");
+						fc.push(snst, "\t\t\t\t\t\tfilled = \"\" + __parse_input(filled,this.grammars, __browser__.getProperty(\"inputmode\"));");
 						fc.push(snst, "\t\t\t\t\t\tif(filled) {");
 						fc.push(snst, "\t\t\t\t\t\t\tswitch(filled) { ");
 						for(int j = 0; j < childNL; j++) {
@@ -1268,7 +1277,7 @@ public class Document {
 					 */
 					/*
 						fc.push("{ type:\""
-							, childA.getNamedItem("mode") == null ? "dtmf voice" : childA.getNamedItem("mode").getNodeValue() 
+							, childA.getNamedItem("mode") == null ? "any" : childA.getNamedItem("mode").getNodeValue() 
 							, "\", regexp:/"
 							, grammar
 							, "/, value:\"\"}");
@@ -1287,7 +1296,7 @@ public class Document {
 						}
 						
 						fc.push("{ type:\""
-							, childA.getNamedItem("mode") == null ? "dtmf voice" : childA.getNamedItem("mode").getNodeValue() 
+							, childA.getNamedItem("mode") == null ? "any" : childA.getNamedItem("mode").getNodeValue() 
 							, "\", regexp:/"
 							, grammar
 							, "/, value:\"\"}");
@@ -1442,44 +1451,47 @@ public class Document {
 			case Currency:
 				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
 				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","12")));
-				fc.push("{ type:\"dtmf voice\", regexp:/"
-						, "d{", min, ",", max, "}((.|*)d{0,2})?"
+				fc.push("{ type:\"dtmf\", regexp:/"
+						, "\\d{", min, ",", max, "}(\\*\\d{0,2})?"
+						, "/, value:\"\"}");
+				fc.push("{ type:\"voice\", regexp:/"
+						, "\\d{", min, ",", max, "}(\\.\\d{0,2})?"
 						, "/, value:\"\"}");
 				break;
 			case Date:
-				fc.push("{ type:\"dtmf voice\", regexp:/"
-						, "d{0,4}[- /.]?(0[1-9]|1[012])[- /.]?(0[1-9]|[12][0-9]|3[01])"
+				fc.push("{ type:\"dtmf\", regexp:/"
+						, "\\d{0,4}(0[1-9]|1[012])(0[1-9]|[12][0-9]|3[01])"
 						, "/, value:\"\"}");
 				fc.push("{ type:\"voice\", regexp:/"
-						, "d{0,4}[- /.]?(0[1-9]|1[012])[- /.]?(0[1-9]|[12][0-9]|3[01])"
+						, "\\d{0,4}[- /.]?(0[1-9]|1[012])[- /.]?(0[1-9]|[12][0-9]|3[01])"
 						, "/, value:\"\"}");
 				break;
 			case Digits:
 				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
 				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","255")));
-				fc.push("{ type:\"dtmf voice\", regexp:/"
-						, "d{" + min + "," + max + "}"
+				fc.push("{ type:\"any\", regexp:/"
+						, "\\d{" + min + "," + max + "}"
 						, "/, value:\"\"}");
 				break;
 			case Number:
 				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
 				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","9")));
-				fc.push("{ type:\"dtmf voice\", regexp:/"
-						, "d{" + min + "," + max + "}"
+				fc.push("{ type:\"any\", regexp:/"
+						, "\\d{" + min + "," + max + "}"
 						, "/, value:\"\"}");
 				break;
 			case Phone:
 				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
 				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","13")));
-				fc.push("{ type:\"dtmf voice\", regexp:/"
-						, "d{" + min + "," + max + "}"
+				fc.push("{ type:\"any\", regexp:/"
+						, "\\d{" + min + "," + max + "}"
 						, "/, value:\"\"}");
 				break;
 			case Time:
 				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
 				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","6")));
-				fc.push("{ type:\"dtmf voice\", regexp:/"
-						, "d{" + min + "," + max + "}"
+				fc.push("{ type:\"any\", regexp:/"
+						, "\\d{" + min + "," + max + "}"
 						, "/, value:\"\"}");
 				break;
 		}

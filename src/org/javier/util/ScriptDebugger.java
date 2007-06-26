@@ -10,6 +10,7 @@
  */
 package org.javier.util;
 
+import java.awt.AWTEvent;
 import java.awt.BorderLayout;
 import java.awt.Button;
 import java.awt.Container;
@@ -19,6 +20,8 @@ import java.awt.Label;
 import java.awt.TextArea;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -255,14 +258,14 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		frame.add(cont, BorderLayout.SOUTH);
 		lblLine = new Label();
 		cont.add(lblLine);
-		Button btnContinue = new Button("Continue");
+		final Button btnContinue = new Button("Continue");
 		cont.add(btnContinue);
 		btnContinue.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				bypass = true;
 			}
 		});
-		Button btnStep = new Button("Step");
+		final Button btnStep = new Button("Step");
 		cont.add(btnStep);
 		btnStep.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
@@ -270,7 +273,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 					bypass = false;
 				}
 			});
-		Button btnStop = new Button("Stop");
+		final Button btnStop = new Button("Stop");
 		cont.add(btnStop);
 		btnStop.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
@@ -278,7 +281,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 					bypass = true;
 				}
 			});
-		Button btnClose = new Button("Close");
+		final Button btnClose = new Button("Close");
 		cont.add(btnClose);
 		btnClose.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent e) {
@@ -294,6 +297,31 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		            //frame.dispose();
 		        }
 	        });
+		
+		frame.addKeyListener(new KeyListener() {
+			public void keyPressed(KeyEvent key) { }
+
+			public void keyReleased(KeyEvent key) { }
+
+			public void keyTyped(KeyEvent key) {
+				switch(key.getKeyCode()) {
+					case KeyEvent.VK_F8:
+						btnContinue.dispatchEvent(new ActionEvent(btnContinue,ActionEvent.ACTION_PERFORMED, ""));
+						break;
+					case KeyEvent.VK_F5:
+						btnStep.dispatchEvent(new ActionEvent(btnStep,ActionEvent.ACTION_PERFORMED, ""));
+						break;
+						/*
+					case KeyEvent.VK_F6:
+						btnStep.dispatchEvent(new ActionEvent(btnStep,ActionEvent.ACTION_PERFORMED, ""));
+						break;
+					case KeyEvent.VK_F6:
+						btnStep.dispatchEvent(new ActionEvent(btnStep,ActionEvent.ACTION_PERFORMED, ""));
+						break;
+						*/
+				}
+			}
+        });
 	}
 	
 	/**
@@ -846,8 +874,9 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		char buff[] = new char[1024];
 		
 		try {
-			while(reader.read(buff,0,1024) >= 0) {
-				code.append(buff);
+			int length;
+			while((length = reader.read(buff,0,1024)) >= 0) {
+				code.append(buff,0,length);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

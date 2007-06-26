@@ -12,9 +12,55 @@ package org.javier.browser.handlers;
 
 import java.io.IOException;
 
+/**
+ * The Input Handler Interface.
+ */
 public interface InputHandler {
 
-	String getInput(String text, String value, String type, String slot, boolean modal) 
-	   throws IOException;
+	/**
+	 * Gets the input.
+	 * 
+	 * @param text
+	 *            the text
+	 * 
+	 * @return the input
+	 * 
+	 * @throws IOException
+	 *             the IO exception
+	 */
+	public String getInput(String text) throws IOException;
 
+	/**
+	 * Gets the input.
+	 * 
+	 * @param text
+	 *            the text
+	 * @param value
+	 *            the default value
+	 * 
+	 * @return the input
+	 * 
+	 * @throws IOException
+	 *             the IO exception
+	 */
+	public String getInput(String text, String value) throws IOException;
+
+	/**
+	 * Gets the input.
+	 * 
+	 * @param min
+	 *            the minimum value's length
+	 * @param text
+	 *            the text
+	 * @param max
+	 *            the maximum value's length
+	 * @param value
+	 *            the default value
+	 * 
+	 * @return the input
+	 * 
+	 * @throws IOException
+	 *             the IO exception
+	 */
+	public String getInput(String text, String value, int min, int max) throws IOException;
 }

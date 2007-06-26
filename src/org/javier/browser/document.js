@@ -1,19 +1,27 @@
-function __grammar_length(grammars, weight) {
+function __grammar_length(grammars, weight, mode) {
 	var length;
 	var result = weight > 0 ? 32767 : 0;
 	
-	for(int i = 0; i < grammars.length; i++) {
-	    var rules = grammars[i].rule;
-		for(int j = 0; j < rules.length; j++) {
-			length =  __parse__regex(rules[j].regex,parent,weight);
-			if(weight > 0) {
-				if(length > result) {
-					result = length;
+	for(var i = 0; i < grammars.length; i++) {
+	    var rules = grammars[i].rules;
+		for(var j = 0; j < rules.length; j++) {
+			if(rules[j].type.indexOf(mode) >= 0
+					|| rules[j].type == "any" 
+					|| mode == "any"
+					|| rules[j].type == "" 
+					|| mode == "")  {
+				var ruleString = rules[j].regexp.toString();
+				ruleString = ruleString.substring(1,ruleString.lastIndexOf("/"));
+				length =  __parse__regexp(ruleString,"",weight);
+				if(weight > 0) {
+					if(length > result) {
+						result = length;
+					}
+				} else {
+					if(length < result) {
+						result = length;
+					}			
 				}
-			} else {
-				if(length < result) {
-					result = length;
-				}			
 			}
 		}
 	}
@@ -21,7 +29,7 @@ function __grammar_length(grammars, weight) {
 	return result;
 }
 
-function __parse__regex(regex,parent,weight) {
+function __parse__regexp(regexp,parent,weight) {
 	var length = 0;
 	var last = 0;
 	
@@ -29,8 +37,8 @@ function __parse__regex(regex,parent,weight) {
 	  __parse__regex_i = 0;
 	}
 	
-	for(; __parse__regex_i < regex.length(); __parse__regex_i++) {
-		switch(regex.charAt(__parse__regex_i)) {
+	for(; __parse__regex_i < regexp.length; __parse__regex_i++) {
+		switch(regexp.charAt(__parse__regex_i)) {
 			case '\\':
 				__parse__regex_i++;
 				length += last;
@@ -41,9 +49,9 @@ function __parse__regex(regex,parent,weight) {
 				if(parent == '|') {
 					return length + last;
 				} else {
-					int aux = length + last;
+					var aux = length + last;
 					last = 0;
-					length = parseregex(regex, '|', weight);
+					length = __parse__regexp(regexp, '|', weight);
 					if(weight == 0) {
 						if(aux < length) {
 							length = aux;
@@ -62,26 +70,26 @@ function __parse__regex(regex,parent,weight) {
 				__parse__regex_i++;
 				return 1;
 			case '[':
-				last = parseregex(regex, '[', weight);
+				last = __parse__regexp(regexp, '[', weight);
 			case '{':
-				int index = regex.indexOf("}", __parse__regex_i);
+				var index = regexp.indexOf("}", __parse__regex_i);
 				if(index >= 0) {
-					String range = regex.substring(__parse__regex_i, index);
+					var range = regexp.substring(__parse__regex_i, index);
 					__parse__regex_i = index;
 					index = range.indexOf(',');
 					if(index >= 0) {
 						if(weight == 0) {
-							last *= Integer.parseInt(range.split(",")[0]);
+							last *= parseInt(range.split(",")[0]);
 						} else {
-							last *= Integer.parseInt(range.split(",")[1]);								
+							last *= parseInt(range.split(",")[1]);								
 						}
 					} else {
-						last *= Integer.parseInt(range);
+						last *= parseInt(range);
 					}
 				}
 				break;
 			case '(':
-				last = parseregex(regex, '(', weight);
+				last = __parse__regexp(regexp, '(', weight);
 				break;
 			case '*':
 				last *= weight;
@@ -110,13 +118,15 @@ function __parse_input(input, grammars, slot, mode) {
 	var weight = 0;
 	var result = "";
 	
-	for(int i = 0; i < grammars.length; i++) {
+	for(var i = 0; i < grammars.length; i++) {
 	    var rules = grammars[i].rules;
-		for(int j = 0; j < rules.length; j++) {
+		for(var j = 0; j < rules.length; j++) {
 			if(rules[j].type.indexOf(mode) >= 0
-				|| (rules[j].type == "dtmf voice" 
-					&& mode == ""))  {
-				match = input.match(rules[j].regex);
+					|| rules[j].type == "any" 
+					|| mode == "any"
+					|| rules[j].type == "" 
+					|| mode == "")  {
+				match = input.match(rules[j].regexp);
 				if(match) {
 					if(match[0].length > length || grammars[i].weight > weight) {
 						weight = grammars[i].weight;
