@@ -10,18 +10,19 @@
  */
 package org.javier.util;
 
-import java.awt.AWTEvent;
 import java.awt.BorderLayout;
 import java.awt.Button;
 import java.awt.Container;
 import java.awt.FlowLayout;
 import java.awt.Frame;
-import java.awt.Label;
 import java.awt.TextArea;
+import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -56,6 +57,9 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 
 	/** The text area used to watch the code and follow the execution. */
 	private TextArea txtCode;
+	
+	/** It's used to set a breakpoint. */
+	private int breakPoint = -1;
 
 	/** It's used to eventually enable/disable debugging. */
 	private boolean bypass;
@@ -73,7 +77,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	private int line = 1;
 
 	/** The label uses to show the current execution line. */
-	private Label lblLine;
+	private TextField txtLine;
 
 	/** 
 	 * When this field is set to <code>true</code> an exception is thrown to 
@@ -249,6 +253,25 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		frame.setLayout(new BorderLayout());
 		txtCode = new TextArea();
 		txtCode.setEditable(false);
+		txtCode.addMouseListener(new MouseAdapter() {
+			public void mouseReleased(MouseEvent arg0) {
+				String code = txtCode.getText();
+				int line = 1;
+				int selection = txtCode.getCaretPosition();
+				int position = 0;
+				
+				while(position >= 0 && position < selection) {
+					position = code.indexOf("\n", position);
+					if(position < selection) {
+						position++;
+						line ++;						
+					}
+				}
+		
+				txtLine.setText(String.valueOf(line));
+			}
+		});
+		
 		frame.add(txtCode, BorderLayout.CENTER);
 		txtBindings = new TextArea();
 		txtBindings.setEditable(false);
@@ -256,8 +279,16 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		Container cont = new Container();
 		cont.setLayout(new FlowLayout());
 		frame.add(cont, BorderLayout.SOUTH);
-		lblLine = new Label();
-		cont.add(lblLine);
+		final Button btnGoto = new Button("Go to");
+		cont.add(btnGoto);
+		btnGoto.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				breakPoint = Integer.parseInt(txtLine.getText());
+				bypass = true;
+			}
+		});
+		txtLine = new TextField();
+		cont.add(txtLine);
 		final Button btnContinue = new Button("Continue");
 		cont.add(btnContinue);
 		btnContinue.addActionListener(new ActionListener() {
@@ -351,7 +382,10 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		int end;
 		int stepLine;
 		
-		if(!bypass) {
+		if(!bypass || line == breakPoint) {
+			bypass = false;
+			breakPoint = -1;
+			
 			txtBindings.setText(dumpValues(ref));
 			
 			code = txtCode.getText();
@@ -367,7 +401,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 				end = code.indexOf("\n", start);
 			}
 	
-			lblLine.setText(String.valueOf(line));
+			txtLine.setText(String.valueOf(line));
 			txtCode.requestFocus();
 			txtCode.setCaretPosition(start);
 			txtCode.setSelectionStart(start);
@@ -670,7 +704,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	 */
 	public void clear() {
 		line = 1;
-		lblLine.setText("");
+		txtLine.setText("");
 		txtCode.setText("");
 		txtBindings.setText("");
 	}
@@ -685,16 +719,6 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		} 
 		
 		se.setBindings(bindings, scope);
-	}
-
-	/**
-	 * Sets the bypass.
-	 * 
-	 * @param bypass
-	 *            the bypass
-	 */
-	public void setBypass(boolean bypass) {
-		this.bypass = bypass;
 	}
 
 	/* (non-Javadoc)
@@ -740,8 +764,15 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		if(debugOn) {
 			debugCode = new StringBuffer(code);
 			txtCode.setText(txtCode.getText() + "\n" + code);
+			/*
+			if(txtCode.getText().length() > 0) {
+				txtCode.setText(txtCode.getText() + "\n" + code);
+				line++;
+			} else {
+				txtCode.setText(code);								
+			}
+			*/
 			if(debugOn) {
-				debugCode = new StringBuffer(code);
 				for(int i = 0; i < debugCode.length(); i++) {
 					if(!escape) {
 						switch(debugCode.charAt(i)) {
