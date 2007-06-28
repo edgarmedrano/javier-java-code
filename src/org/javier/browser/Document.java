@@ -574,7 +574,9 @@ public class Document {
 					fc.push("return \"#_int_exit\";");
 					break;
 				case Field:
-					fc.push(snst, "case \"", childA.getNamedItem("name").getNodeValue(), "\":");
+					String fieldName = childA.getNamedItem("name").getNodeValue();
+					
+					fc.push(snst, "case \"", fieldName, "\":");
 					
 					if(childA.getNamedItem("cond") != null) {
 						fc.push(snst, "\tif("
@@ -587,16 +589,16 @@ public class Document {
 					if(childA.getNamedItem("modal") != null 
 							&& childA.getNamedItem("modal").getNodeValue().equalsIgnoreCase("true")) {
 						fc.push(snst, "\t\tthis."
-								, childA.getNamedItem("name").getNodeValue()
+								, fieldName
 								, "_grammars = new Array("
 								, collectGrammars(child)
 								, ");");
 					} else {
 						fc.push(snst, "\t\tthis."
-								, childA.getNamedItem("name").getNodeValue()
+								, fieldName
 								, "_grammars = this.grammars.slice(0);");
 						fc.push(snst, "\t\tthis."
-								, childA.getNamedItem("name").getNodeValue()
+								, fieldName
 								, "_grammars.push("
 								, collectGrammars(child)
 								, ");");
@@ -608,26 +610,26 @@ public class Document {
 						String max = typeProperties.getProperty("maxlength", "");
 						if(min == "") {
 							fc.push(snst, "\t\tthis."
-									, childA.getNamedItem("name").getNodeValue()
+									, fieldName
 									, "_min = __grammar_length(this."
-									, childA.getNamedItem("name").getNodeValue()
+									, fieldName
 									, "_grammars, 0, __browser__.getProperty(\"inputmode\"));");
 						} else {
 							fc.push(snst, "\t\tthis."
-									, childA.getNamedItem("name").getNodeValue()
+									, fieldName
 									, "_min = "
 									, min
 									, ";");							
 						}
 						if(max == "") {
 							fc.push(snst, "\t\tthis."
-									, childA.getNamedItem("name").getNodeValue()
+									, fieldName
 									, "_max = __grammar_length(this."
-									, childA.getNamedItem("name").getNodeValue()
+									, fieldName
 									, "_grammars, 10, __browser__.getProperty(\"inputmode\"));");
 						} else {
 							fc.push(snst, "\t\tthis."
-									, childA.getNamedItem("name").getNodeValue()
+									, fieldName
 									, "_max = "
 									, max
 									, ";");							
@@ -635,36 +637,54 @@ public class Document {
 					}
 					
 					fc.push(snst, "\t\tthis."
-							, childA.getNamedItem("name").getNodeValue()
+							, fieldName
 							, "_count = (!this."
-							, childA.getNamedItem("name").getNodeValue()
+							, fieldName
 							, "_count? 0 : this."
-							, childA.getNamedItem("name").getNodeValue()
+							, fieldName
 							, "_count) + 1;");
 					fc.push(snst, "\t\t_count = this."
-							, childA.getNamedItem("name").getNodeValue()
+							, fieldName
 							, "_count;"
 							, this.parse(child,level + 2));
-					fc.push(snst, "\t\tfilled = \"\" + "
+					fc.push(snst, "\t\tthis."
+							, fieldName
+							, "_result = \"\" + "
 							, "__browser__.getInput(\""
-							, childA.getNamedItem("name").getNodeValue()
+							, fieldName
 							, "\","
-							, childA.getNamedItem("name").getNodeValue()
+							, fieldName
 							, ", this."
-							, childA.getNamedItem("name").getNodeValue()
+							, fieldName
 							, "_min, this."
-							, childA.getNamedItem("name").getNodeValue()
+							, fieldName
 							, "_max);");
-					fc.push(snst, "\t\tfilled = \"\" + "
-							, "__parse_input(filled, this."
-							, childA.getNamedItem("name").getNodeValue()
+					fc.push(snst, "\t\tif(this."
+							, fieldName
+							, "_result != \"\") {");
+					fc.push(snst, "\t\t\tthis."
+							, fieldName
+							, "_result = "
+							, "__parse_input(this."
+							, fieldName
+							, "_result, this."
+							, fieldName
 							, "_grammars, \""
-							, childA.getNamedItem("slot") != null ? childA.getNamedItem("slot").getNodeValue() : childA.getNamedItem("name").getNodeValue()
+							, childA.getNamedItem("slot") != null ? childA.getNamedItem("slot").getNodeValue() : fieldName
 							, "\", __browser__.getProperty(\"inputmode\"));");
-					fc.push(snst, "\t\tif(filled) {");
-					fc.push(snst, "\t\t\t"
-							, childA.getNamedItem("name").getNodeValue()
-							, " = filled;");
+					
+					fc.push(snst, "\t\t\tif(this."
+							, fieldName
+							, "_result.match) {");
+					fc.push(snst, "\t\t\t\t"
+							, fieldName
+							, " = this."
+							, fieldName
+							, "_result.value;");
+					fc.push(snst, "\t\t\t} else {");
+					fc.push(snst, "\t\t\t\tthrow(\"nomatch\");");
+					fc.push(snst, "\t\t\t}");
+					
 					fc.push(snst, "\t\t\tthrow(\"filled\");");
 					fc.push(snst, "\t\t} else {");
 					fc.push(snst, "\t\t\tthrow(\"noinput\");");
@@ -723,7 +743,7 @@ public class Document {
 					fc.push(snst, "\t\t\t\t\t|| _error1 == \"nomatch\"");
 					fc.push(snst, "\t\t\t\t\t|| _error1 == \"maxspeechtimeout\") {");
 					fc.push(snst, "\t\t\t\t\t_nextitem=\""
-							, childA.getNamedItem("name").getNodeValue()
+							, fieldName
 							, "\"; break;");
 					fc.push(snst, "\t\t\t\t} else {");
 					fc.push(snst, "\t\t\t\t\t_throw = true; break;");

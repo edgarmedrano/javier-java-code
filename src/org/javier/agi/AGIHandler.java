@@ -51,7 +51,8 @@ public class AGIHandler
 	}
 	
 	private static synchronized int getFileIndex() {
-		return ++file_index;
+		file_index = (file_index + 1) & 0xffff; // resets index after 32,767
+		return file_index;
 	}
 	
 
@@ -198,19 +199,21 @@ public class AGIHandler
 	 * @throws IOException 
 	 */
 	public void addText(String text) throws IOException {
-		String file = textToWav(text);
+		File file = textToWav(text);
 		
-		if(file == null) {
-		} else {
+		if(file != null) {
+			String fileName = file.getName();
+			fileName = fileName.substring(0,fileName.lastIndexOf(".WAV"));
 			try {
-				buffer += agi.stream_file(file,"0123456789");
+				buffer += agi.stream_file(fileName,"0123456789");
 			} catch (Exception e) {
 				throw(new IOException(e.getMessage(),e.getCause()));
 			}
+			file.delete();
 		}
 	}
 
-	private String textToWav(String text) {
+	private File textToWav(String text) {
 		SpFileStream spfs = (SpFileStream) createActiveXObject(SpFileStream.class);
 		String fileName;
 		String wavPath;
@@ -237,7 +240,7 @@ public class AGIHandler
 		
 		spfs.Close();
 				
-		return fileName;
+		return wavFile;
 	}
 	
 	/**

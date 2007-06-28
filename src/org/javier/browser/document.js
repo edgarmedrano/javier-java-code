@@ -116,7 +116,8 @@ function __parse_input(input, grammars, slot, mode) {
 	var length = 0;
 	var match;
 	var weight = 0;
-	var result = "";
+	var result = new Object();
+	result.match = false;
 	
 	for(var i = 0; i < grammars.length; i++) {
 	    var rules = grammars[i].rules;
@@ -131,10 +132,15 @@ function __parse_input(input, grammars, slot, mode) {
 					if(match[0].length > length || grammars[i].weight > weight) {
 						weight = grammars[i].weight;
 						length = match[0].length;
+						result.next = grammars[i].next;
+						result.event = grammars[i].event;
+						result.expr = grammars[i].expr;
+						result.eventexpr = grammars[i].eventexpr;
+						result.match = true;
 						if(rules[j].value) {
-							result = rules[j].value;
+							result.value = rules[j].value;
 						} else {
-							result = match[0];
+							result.value = match[0];
 						}
 					}
 				}	
