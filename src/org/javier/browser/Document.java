@@ -266,6 +266,8 @@ public class Document {
 			
 			throw(e);
 		}
+		seJavaScript.put("__DEBUG__", null);
+		
 		if(nextDoc instanceof String) {
 			nextDoc = new Document((String) nextDoc);
 		}
@@ -473,6 +475,7 @@ public class Document {
 		Node childC;
 		NamedNodeMap childCA;
 		Tag childTag;
+		String fieldName;
 		
 		if(n > 0) {
 			snst.push("\n");
@@ -574,7 +577,7 @@ public class Document {
 					fc.push("return \"#_int_exit\";");
 					break;
 				case Field:
-					String fieldName = childA.getNamedItem("name").getNodeValue();
+					fieldName = childA.getNamedItem("name").getNodeValue();
 					
 					fc.push(snst, "case \"", fieldName, "\":");
 					
@@ -673,18 +676,21 @@ public class Document {
 							, childA.getNamedItem("slot") != null ? childA.getNamedItem("slot").getNodeValue() : fieldName
 							, "\", __browser__.getProperty(\"inputmode\"));");
 					
-					fc.push(snst, "\t\t\tif(this."
-							, fieldName
-							, "_result.match) {");
-					fc.push(snst, "\t\t\t\t"
-							, fieldName
-							, " = this."
-							, fieldName
-							, "_result.value;");
+					fc.push(snst, "\t\t\tif(this.", fieldName, "_result.match) {");
+					fc.push(snst, "\t\t\t\tif(this.", fieldName, "_result.event) {");
+					fc.push(snst, "\t\t\t\t\tthrow(this.", fieldName, "_result.event);");
+					fc.push(snst, "\t\t\t\t} else if(this.", fieldName, "_result.eventexpr) {");
+					fc.push(snst, "\t\t\t\t\tthrow(eval(this.", fieldName, "_result.eventexpr));");
+					fc.push(snst, "\t\t\t\t} else if(this.", fieldName, "_result.next) {");
+					fc.push(snst, "\t\t\t\t\treturn this.", fieldName, "_result.next;");
+					fc.push(snst, "\t\t\t\t} else if(this.", fieldName, "_result.expr) {");
+					fc.push(snst, "\t\t\t\t\treturn eval(this.", fieldName, "_result.expr);");
+					fc.push(snst, "\t\t\t\t} else {");
+					fc.push(snst, "\t\t\t\t\t", fieldName, " = this.", fieldName, "_result.value;");
+					fc.push(snst, "\t\t\t\t}");
 					fc.push(snst, "\t\t\t} else {");
 					fc.push(snst, "\t\t\t\tthrow(\"nomatch\");");
 					fc.push(snst, "\t\t\t}");
-					
 					fc.push(snst, "\t\t\tthrow(\"filled\");");
 					fc.push(snst, "\t\t} else {");
 					fc.push(snst, "\t\t\tthrow(\"noinput\");");
@@ -742,9 +748,7 @@ public class Document {
 					fc.push(snst, "\t\t\t\t\t|| _error1 == \"noinput\"");
 					fc.push(snst, "\t\t\t\t\t|| _error1 == \"nomatch\"");
 					fc.push(snst, "\t\t\t\t\t|| _error1 == \"maxspeechtimeout\") {");
-					fc.push(snst, "\t\t\t\t\t_nextitem=\""
-							, fieldName
-							, "\"; break;");
+					fc.push(snst, "\t\t\t\t\t_nextitem=\"", fieldName, "\"; break;");
 					fc.push(snst, "\t\t\t\t} else {");
 					fc.push(snst, "\t\t\t\t\t_throw = true; break;");
 					fc.push(snst, "\t\t\t\t}");
@@ -838,44 +842,52 @@ public class Document {
 					fc.push(this.parse(child,level + 5));
 					
 					if(childTag == Tag.Menu) {
-						fc.push(snst, "\t\t\t\t\t\tthis.menu_choice_min = __grammar_length(this.grammars,0, __browser__.getProperty(\"inputmode\"));");						
-						fc.push(snst, "\t\t\t\t\t\tthis.menu_choice_max = __grammar_length(this.grammars,10, __browser__.getProperty(\"inputmode\"));");						
-						fc.push(snst, "\t\t\t\t\t\tfilled = \"\" + __browser__.getInput(\"type your choice\",\"\", this.menu_choice_min, this.menu_choice_max);");
-						fc.push(snst, "\t\t\t\t\t\tfilled = \"\" + __parse_input(filled,this.grammars, __browser__.getProperty(\"inputmode\"));");
-						fc.push(snst, "\t\t\t\t\t\tif(filled) {");
-						fc.push(snst, "\t\t\t\t\t\t\tswitch(filled) { ");
-						for(int j = 0; j < childNL; j++) {
+						fieldName = "menu";
+						fc.push(snst, "\t\tthis.menu_choices = \"");
+						boolean hasChoices = false; 
+						for(int j=0; j < childNL; j++) {
 							childC = childN.item(j);
 							childCA = childC.getAttributes();
 							if(childC.getNodeName().equals("choice")) {
+								if(hasChoices) {
+									fc.push("|");									
+								} else {
+									hasChoices = true;
+								}
 								if(childCA.getNamedItem("dtmf") != null) {
-									fc.push(snst, "\t\t\t\t\t\t\t\tcase \"");
 									fc.push(childCA.getNamedItem("dtmf").getNodeValue());
-									fc.push("\": ");
 								}
+								fc.push("=");
 								if(childC.hasChildNodes()) {
-									fc.push(snst, "\t\t\t\t\t\t\t\tcase \"");
 									fc.push(childC.getFirstChild().getNodeValue());
-									fc.push("\": ");
-								}
-								if(childCA.getNamedItem("next") != null) {
-									fc.push("return \"");
-									fc.push(childCA.getNamedItem("next").getNodeValue());
-									fc.push("\";");
-								}
-								if(childCA.getNamedItem("expr") != null) {
-									fc.push("return ");
-									fc.push(childCA.getNamedItem("expr").getNodeValue().replaceAll("\n",snst + "\t"));
-									fc.push(";");
 								}
 							}
 						}
-						fc.push(snst, "\t\t\t\t\t\t\t\tdefault:");
-						fc.push(snst, "\t\t\t\t\t\t\t\t\tthrow(\"nomatch\");");
-						fc.push(snst, "\t\t\t\t\t\t\t}");
-						fc.push(snst, "\t\t\t\t\t\t} else {");
-						fc.push(snst, "\t\t\t\t\t\t\tthrow(\"noinput\");");
-						fc.push(snst, "\t\t\t\t\t\t}");
+						fc.push("\";");
+						fc.push(snst, "\t\t\t\t\t\tthis.menu_min = __grammar_length(this.grammars,0, __browser__.getProperty(\"inputmode\"));");						
+						fc.push(snst, "\t\t\t\t\t\tthis.menu_max = __grammar_length(this.grammars,10, __browser__.getProperty(\"inputmode\"));");						
+						fc.push(snst, "\t\t\t\t\t\tthis.menu_result = \"\" + __browser__.getInput(\"Menu\",this.menu_choices, this.menu_min, this.menu_max);");
+						fc.push(snst, "\t\tif(this.menu_result != \"\") {");
+						fc.push(snst, "\t\t\tthis.menu_result = "
+								, "__parse_input(this.menu_result, this.grammars, \"menu\", __browser__.getProperty(\"inputmode\"));");
+						
+						fc.push(snst, "\t\t\tif(this.menu_result.match) {");
+						fc.push(snst, "\t\t\t\tif(this.menu_result.event) {");
+						fc.push(snst, "\t\t\t\t\tthrow(this.menu_result.event);");
+						fc.push(snst, "\t\t\t\t} else if(this.menu_result.eventexpr) {");
+						fc.push(snst, "\t\t\t\t\tthrow(eval(this.menu_result.eventexpr));");
+						fc.push(snst, "\t\t\t\t} else if(this.menu_result.next) {");
+						fc.push(snst, "\t\t\t\t\treturn this.menu_result.next;");
+						fc.push(snst, "\t\t\t\t} else if(this.menu_result.expr) {");
+						fc.push(snst, "\t\t\t\t\treturn eval(this.menu_result.expr);");
+						fc.push(snst, "\t\t\t\t}");
+						fc.push(snst, "\t\t\t} else {");
+						fc.push(snst, "\t\t\t\tthrow(\"nomatch\");");
+						fc.push(snst, "\t\t\t}");
+						fc.push(snst, "\t\t\tthrow(\"filled\");");
+						fc.push(snst, "\t\t} else {");
+						fc.push(snst, "\t\t\tthrow(\"noinput\");");
+						fc.push(snst, "\t\t}");
 					}
 					
 					fc.push(snst, "\t\t\t\t\t\t_nextitem = false;");
@@ -1314,12 +1326,14 @@ public class Document {
 						if(fc.length() > 0) {
 							fc.push(", ");
 						}
-						
-						fc.push("{ type:\""
-							, childA.getNamedItem("mode") == null ? "any" : childA.getNamedItem("mode").getNodeValue() 
-							, "\", regexp:/"
-							, grammar
-							, "/, value:\"\"}");
+						fc.push("{ event:\"\", next:\"\""
+								, ", eventexpr:\"\", expr:\"\", rules: ["
+								, "{ type:\""
+								, childA.getNamedItem("mode") == null ? "any" : childA.getNamedItem("mode").getNodeValue() 
+								, "\", regexp:/"
+								, grammar
+								, "/, value:\"\"}"
+								, "], weight:1.0, scope:20 }");
 					} 
 					
 					break;

@@ -1,6 +1,6 @@
 function __grammar_length(grammars, weight, mode) {
 	var length;
-	var result = weight > 0 ? 32767 : 0;
+	var result = weight > 0 ? 0 : 32767;
 	
 	for(var i = 0; i < grammars.length; i++) {
 	    var rules = grammars[i].rules;

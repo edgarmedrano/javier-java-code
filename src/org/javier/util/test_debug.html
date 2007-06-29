@@ -1,0 +1,12 @@
+<script language="JavaScript" src="ScriptDebugger.js"></script>
+<script language="JavaScript">
+
+function fun(x,y,z) {
+   return "There is";
+}
+var test = {x:1,y:["Hi!",2,{a:1}]};
+test.z = test;
+test.fun = fun;
+test.doc = Math;
+alert(__DUMP__(test));
+</script>

@@ -26,13 +26,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.script.Bindings;
@@ -89,164 +85,11 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	private TextArea txtBindings;
 	
 	/**
-	 * This is used to wrap the Bindings.
-	 */
-	class DebugBindings implements Bindings {
-		
-		/** The binds to be watched. */
-		private Bindings binds;
-		
-		/**
-		 * The Constructor.
-		 * 
-		 * @param binds the binds to be watched
-		 */
-		public DebugBindings(Bindings binds) {
-			this.binds = binds;
-		}
-		
-		/* (non-Javadoc)
-		 * @see javax.script.Bindings#put(java.lang.String, java.lang.Object)
-		 */
-		public Object put(String name, Object value) {
-			Object res = binds.put(name, value);
-			txtBindings.setText(txtBindings.getText() 
-				+ "\nput(" + name + "," + value + ") " + res);
-			return res;
-		}
-		
-		/* (non-Javadoc)
-		 * @see javax.script.Bindings#get(java.lang.Object)
-		 */
-		public Object get(Object key) {
-			Object res = binds.get(key);
-			txtBindings.setText(txtBindings.getText() 
-					+ "\nget(" + key + ") " + res);
-			return res;
-		}
-
-		/* (non-Javadoc)
-		 * @see javax.script.Bindings#containsKey(java.lang.Object)
-		 */
-		public boolean containsKey(Object key) {
-			boolean res = binds.containsKey(key);
-			
-			if(!key.toString().equals("__DEBUG__")) {
-				txtBindings.setText(txtBindings.getText() 
-		    		+ "\ncontainsKey(" + key + ") " + res);
-			}
-			
-			return res;
-		}
-
-		/* (non-Javadoc)
-		 * @see javax.script.Bindings#putAll(java.util.Map)
-		 */
-		public void putAll(Map<? extends String, ? extends Object> toMerge) {
-			binds.putAll(toMerge);
-			txtBindings.setText(txtBindings.getText() 
-				+ "\nputAll(" + toMerge + ")");
-		}
-
-		/* (non-Javadoc)
-		 * @see javax.script.Bindings#remove(java.lang.Object)
-		 */
-		public Object remove(Object key) {
-			Object res = binds.remove(key);
-			
-			if(!key.toString().equals("__DEBUG__")) {
-				txtBindings.setText(txtBindings.getText() 
-					+ "\nremove(" + key + ") " + res);
-			}
-			
-			return res;
-		}
-
-		/* (non-Javadoc)
-		 * @see java.util.Map#clear()
-		 */
-		public void clear() {
-			binds.clear();
-			txtBindings.setText(txtBindings.getText() 
-				+ "\nclear()");
-		}
-
-		/* (non-Javadoc)
-		 * @see java.util.Map#containsValue(java.lang.Object)
-		 */
-		public boolean containsValue(Object value) {
-			boolean res = binds.containsValue(value);
-			txtBindings.setText(txtBindings.getText() 
-	    		+ "\ncontainsValue(" + value + ") " + res);
-			return res;
-		}
-
-		/* (non-Javadoc)
-		 * @see java.util.Map#entrySet()
-		 */
-		public Set<java.util.Map.Entry<String, Object>> entrySet() {
-			Set<java.util.Map.Entry<String, Object>> res = binds.entrySet();
-			txtBindings.setText(txtBindings.getText() 
-		    		+ "\nentrySet() " + res);
-			return res;
-		}
-
-		/* (non-Javadoc)
-		 * @see java.util.Map#isEmpty()
-		 */
-		public boolean isEmpty() {
-			boolean res = binds.isEmpty();
-			txtBindings.setText(txtBindings.getText() 
-	    		+ "\nisEmpty() " + res);
-			return res;
-		}
-
-		/* (non-Javadoc)
-		 * @see java.util.Map#keySet()
-		 */
-		public Set<String> keySet() {
-			Set<String> res = binds.keySet();
-			txtBindings.setText(txtBindings.getText() 
-		    	+ "\nkeySet() " + res);
-			return res;
-		}
-
-		/* (non-Javadoc)
-		 * @see java.util.Map#size()
-		 */
-		public int size() {
-			int res = binds.size();
-			txtBindings.setText(txtBindings.getText() 
-				+ "\nsize() " + res);
-			return res;
-		}
-
-		/* (non-Javadoc)
-		 * @see java.util.Map#values()
-		 */
-		public Collection<Object> values() {
-			Collection<Object> res = binds.values();
-			txtBindings.setText(txtBindings.getText() 
-		    	+ "\nvalues() " + res);
-			return res;
-		}		
-	}
-
-	/**
 	 * @param debug Enable/disable debug from start
 	 * @param se    the script engine to be watched
 	 */
 	public ScriptDebugger(ScriptEngine se, boolean debug) {
 		this.se = se;
-		if(!(getBindings(ScriptContext.ENGINE_SCOPE) instanceof DebugBindings)) {
-			setBindings(new DebugBindings(getBindings(ScriptContext.ENGINE_SCOPE))
-				, ScriptContext.ENGINE_SCOPE);
-		}
-		if(!(getBindings(ScriptContext.GLOBAL_SCOPE) instanceof DebugBindings)) {
-			setBindings(new DebugBindings(getBindings(ScriptContext.GLOBAL_SCOPE))
-				, ScriptContext.GLOBAL_SCOPE);
-		}
-		
 		this.debugOn = debug;
 
 		frame = new Frame();
@@ -312,20 +155,11 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 					bypass = true;
 				}
 			});
-		final Button btnClose = new Button("Close");
-		cont.add(btnClose);
-		btnClose.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
+		
+		frame.addWindowListener(new WindowAdapter() {
+		        public void windowClosing(WindowEvent evt) {
 					bypass = true;
 		            frame.setVisible(false);
-		            frame.dispose();
-				}
-			});
-		
-		frame.addWindowStateListener(new WindowAdapter() {
-		        public void windowClosing(WindowEvent evt) {
-		            frame.setVisible(false);
-		            //frame.dispose();
 		        }
 	        });
 		
@@ -354,7 +188,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 			}
         });
 	}
-	
+
 	/**
 	 * @param se    the script engine to be watched
 	 */
@@ -376,36 +210,37 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	 *         <code>false</code> if the user press step (in the script this
 	 *               will continue with the execution)
 	 */
-	public boolean cb(int line, Object ref) {
+	public boolean cb(int line, String local, String global) {
 		String code;
 		int start;
 		int end;
 		int stepLine;
 		
+		code = txtCode.getText();
+		start = 0;
+		end = code.length();
+		stepLine = 1;
+		
+		while(stepLine < line) {
+			start = code.indexOf("\n", start) + 1;
+			stepLine ++;
+		}
+		if(code.indexOf("\n", start) > 0) {
+			end = code.indexOf("\n", start);
+		}
+
+		txtLine.setText(String.valueOf(line));
+		txtCode.requestFocus();
+		txtCode.setCaretPosition(start);
+		txtCode.setSelectionStart(start);
+		txtCode.setSelectionEnd(end);
+				
 		if(!bypass || line == breakPoint) {
 			bypass = false;
 			breakPoint = -1;
 			
-			txtBindings.setText(dumpValues(ref));
+			txtBindings.setText("GLOBAL: \n" + global + "\nLOCAL:\n" + local);
 			
-			code = txtCode.getText();
-			start = 0;
-			end = code.length();
-			stepLine = 0;
-			
-			while(stepLine < line) {
-				start = code.indexOf("\n", start) + 1;
-				stepLine ++;
-			}
-			if(code.indexOf("\n", start) > 0) {
-				end = code.indexOf("\n", start);
-			}
-	
-			txtLine.setText(String.valueOf(line));
-			txtCode.requestFocus();
-			txtCode.setCaretPosition(start);
-			txtCode.setSelectionStart(start);
-			txtCode.setSelectionEnd(end);
 			step = false;
 			stop = false;
 			while(!bypass && !step && !stop) {
@@ -422,133 +257,6 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		return false;
 	}
 
-	/**
-	 * Dumps the variable's values in the execution scope.
-	 * 
-	 * @param ref the reference to the current scope
-	 * @return the variable's values
-	 */
-	private String dumpValues(Object ref) {
-		StringBuffer sb = new StringBuffer();
-		Object value = ref;
-		
-		if(ref == null) {
-			return "";
-		}
-		
-		Method getDefaultValue = null;
-		Method getIds = null;
-		Method getInt = null;
-		Method getString = null;
-		Method getParentScope = null; 
-		Object ids[] = {};
-		
-		for(Method m: ref.getClass().getMethods()) {
-			if(m.getName().equals("get") && m.getParameterTypes().length == 2) {
-				if(m.getParameterTypes()[0] == Integer.TYPE) {
-					getInt = m;
-				} else if(m.getParameterTypes()[0] == String.class) {
-					getString = m;
-				}
-			} else if(m.getName().equals("getDefaultValue")) {
-				getDefaultValue = m;
-			} else if(m.getName().equals("getIds")) {
-				getIds = m;
-			} else if(m.getName().equals("getParentScope")) {
-				getParentScope = m;
-			}
-		}
-		
-		if(getParentScope == null) {
-			return "";
-		}
-		
-		try {
-			sb.append(dumpValues(getParentScope.invoke(ref, new Object[] {})));
-		} catch (IllegalArgumentException e1) {
-		} catch (IllegalAccessException e1) {
-		} catch (InvocationTargetException e1) {
-		}
-		
-		sb.append("\n");
-		sb.append(ref);
-		sb.append(":");
-		if(getDefaultValue != null) {
-			try {
-				value = getDefaultValue.invoke(ref, new Object[] { null });
-				if(value != null) {
-					sb.append(value);
-				}
-			} catch (SecurityException e) {
-			} catch (IllegalArgumentException e) {
-			} catch (IllegalAccessException e) {
-			} catch (InvocationTargetException e) {
-			}
-		}
-		
-		if(getIds != null && getInt != null && getString != null) {
-			ids = new Object[] {};
-			try {
-				ids = (Object []) getIds.invoke(ref, new Object[] {});
-			} catch (SecurityException e) {
-			} catch (IllegalArgumentException e) {
-			} catch (IllegalAccessException e) {
-			} catch (InvocationTargetException e) {
-			}
-			if(ids != null && ids.length > 0) {
-				sb.append("{ ");
-				for(int i = 0; i < ids.length; i++) {
-					sb.append("\n\t");
-					if(i > 0) {
-						sb.append(", ");
-					}
-					
-					value = null;
-					try {	
-						if(ids[i] instanceof String) {
-							value = getString.invoke(ref, new Object[] {ids[i], ref});
-						} else {
-							value = getInt.invoke(ref, new Object[] {ids[i], ref});
-						}
-						if(value !=  null) {
-							getDefaultValue = value.getClass().getMethod("getDefaultValue"
-									, new Class<?>[] { Class.class });
-							value = getDefaultValue.invoke(value, new Object[] { null });
-						}
-					} catch (SecurityException e) {
-					} catch (IllegalArgumentException e) {
-						e.printStackTrace();
-					} catch (IllegalAccessException e) {
-					} catch (InvocationTargetException e) {
-					} catch (NoSuchMethodException e) {
-					}
-					/*
-					if(value !=  null) {
-						sb.append(getString(ids[i].toString(),value,level));
-					}
-					*/
-					sb.append(ids[i].toString());
-					sb.append(": ");
-					if(value !=  null) {
-						if(value.toString().length() > 128) {
-							sb.append(value.toString().substring(0, 128).replaceAll("\n", " "));
-						} else {
-							sb.append(value.toString().replaceAll("\n", " "));
-						}
-					} else {
-						sb.append("null");						
-					}
-						
-				}
-				sb.append(" }");
-			}
-		} else {
-			sb.append("null");
-		}
-			
-		return sb.toString();
-	}
-
 	/* (non-Javadoc)
 	 * @see javax.script.ScriptEngine#createBindings()
 	 */
@@ -561,7 +269,13 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	 */
 	public Object eval(Reader reader) throws ScriptException {
 		init();
-		return se.eval(setupReader(reader));
+		try {
+			return se.eval(setupReader(reader));
+		} catch(ScriptException e) {
+			throw(e);
+		} finally {
+	        frame.setVisible(false);			
+		}
 	}
 
 	/* (non-Javadoc)
@@ -570,11 +284,13 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	public Object eval(Reader reader, Bindings n) throws ScriptException {
 		init();
 		
-		if(!(n instanceof DebugBindings)) {
-			n = new DebugBindings(n);
+		try {
+			return se.eval(setupReader(reader), n);
+		} catch(ScriptException e) {
+			throw(e);
+		} finally {
+	        frame.setVisible(false);			
 		}
-		
-		return se.eval(setupReader(reader), n);
 	}
 
 	/* (non-Javadoc)
@@ -583,7 +299,14 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	public Object eval(Reader reader, ScriptContext context)
 			throws ScriptException {
 		init();
-		return se.eval(setupReader(reader), context);
+		
+		try {
+			return se.eval(setupReader(reader), context);
+		} catch(ScriptException e) {
+			throw(e);
+		} finally {
+	        frame.setVisible(false);			
+		}
 	}
 
 	/* (non-Javadoc)
@@ -591,7 +314,14 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	 */
 	public Object eval(String script) throws ScriptException {
 		init();
-		return se.eval(setup(script));
+		
+		try {
+			return se.eval(setup(script));
+		} catch(ScriptException e) {
+			throw(e);
+		} finally {
+	        frame.setVisible(false);			
+		}
 	}
 
 	/* (non-Javadoc)
@@ -600,11 +330,13 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	public Object eval(String script, Bindings n) throws ScriptException {
 		init();
 		
-		if(!(n instanceof DebugBindings)) {
-			n = new DebugBindings(n);
+		try {
+			return se.eval(setup(script), n);
+		} catch(ScriptException e) {
+			throw(e);
+		} finally {
+	        frame.setVisible(false);			
 		}
-		
-		return se.eval(setup(script), n);
 	}
 
 	/* (non-Javadoc)
@@ -613,7 +345,14 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	public Object eval(String script, ScriptContext context)
 			throws ScriptException {
 		init();
-		return se.eval(setup(script), context);
+		
+		try {
+			return se.eval(setup(script), context);
+		} catch(ScriptException e) {
+			throw(e);
+		} finally {
+	        frame.setVisible(false);			
+		}
 	}
 
 	/* (non-Javadoc)
@@ -663,8 +402,14 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	 */
 	protected void init() {
 		se.put("__DEBUG__", this);
+		try {
+			se.eval(new InputStreamReader(ScriptDebugger.class.getResourceAsStream("ScriptDebugger.js")));
+		} catch (ScriptException e) {
+			e.printStackTrace();
+		}
 		frame.pack();
 		frame.setVisible(debugOn);
+		frame.requestFocus();
 	}
 
 	/* (non-Javadoc)
@@ -672,7 +417,16 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	 */
 	public Object invokeFunction(String name, Object... args)
 			throws ScriptException, NoSuchMethodException {
-		return ((Invocable) se).invokeFunction(name, args);
+		frame.setVisible(debugOn);
+		
+		try {
+			return ((Invocable) se).invokeFunction(name, args);
+		} catch(ScriptException e) {
+			throw(e);
+		} finally {
+	        frame.setVisible(false);			
+		}
+		
 	}
 
 	/* (non-Javadoc)
@@ -680,7 +434,15 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	 */
 	public Object invokeMethod(Object thiz, String name, Object... args)
 			throws ScriptException, NoSuchMethodException {
-		return ((Invocable) se).invokeMethod(thiz, name, args);
+		frame.setVisible(debugOn);
+		
+		try {
+			return ((Invocable) se).invokeMethod(thiz, name, args);
+		} catch(ScriptException e) {
+			throw(e);
+		} finally {
+	        frame.setVisible(false);			
+		}
 	}
 
 	/**
@@ -713,11 +475,6 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	 * @see javax.script.ScriptEngine#setBindings(javax.script.Bindings, int)
 	 */
 	public void setBindings(Bindings bindings, int scope) {
-		
-		if(!(bindings instanceof DebugBindings)) {
-			bindings = new DebugBindings(bindings);
-		} 
-		
 		se.setBindings(bindings, scope);
 	}
 
@@ -749,7 +506,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	 * @return the code with debug calls
 	 */
 	protected String setup(String code) {
-		StringBuffer debugCode;
+		StringBuilder debugCode;
 		String callbackCode;
 		int parentesis = 0;
 		int sparentesis = 0;
@@ -762,16 +519,11 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		boolean switchStament = false;
 		
 		if(debugOn) {
-			debugCode = new StringBuffer(code);
+			debugCode = new StringBuilder((int)(code.length() * 2.5));
+			debugCode.append("\n");
+			debugCode.append(code);
 			txtCode.setText(txtCode.getText() + "\n" + code);
-			/*
-			if(txtCode.getText().length() > 0) {
-				txtCode.setText(txtCode.getText() + "\n" + code);
-				line++;
-			} else {
-				txtCode.setText(code);								
-			}
-			*/
+			
 			if(debugOn) {
 				for(int i = 0; i < debugCode.length(); i++) {
 					if(!escape) {
@@ -874,7 +626,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 									&& !switchStament	
 									&& !comment && !lcomment 
 									&& !quotes && !squotes) {
-									callbackCode = "if(__DEBUG__.cb(" + line + ",(function() {}).__parent__)) throw(\"error.debug.stop\");";
+									callbackCode = "if(__DEBUG__.cb(" + line + ",__DUMP__(this),__DUMP__((function() {}).__parent__))) throw(\"error.debug.stop\");";
 									debugCode.replace(i + 1, i + 1, callbackCode);
 									i += callbackCode.length();
 								}
