@@ -28,7 +28,6 @@ import javax.script.ScriptException;
 import org.javier.browser.event.DocumentListener;
 import org.javier.util.EscapeUnescape;
 import org.javier.util.FastConcatenation;
-import org.javier.util.ScriptDebugger;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -151,8 +150,8 @@ public class Document {
 	public Document(String url) {
 		this(url,"GET","",0,0,0);
 		state = State.CREATED;
-		seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"), true);
-		//seJavaScript = sem.getEngineByName("JavaScript");
+		//seJavaScript = new ScriptDebugger(sem.getEngineByName("JavaScript"), true);
+		seJavaScript = sem.getEngineByName("JavaScript");
 	}
 		
 	/**
@@ -1502,14 +1501,14 @@ public class Document {
 				break;
 			case Digits:
 				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
-				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","255")));
+				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","1")));
 				fc.push("{ type:\"any\", regexp:/"
 						, "\\d{" + min + "," + max + "}"
 						, "/, value:\"\"}");
 				break;
 			case Number:
 				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
-				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","9")));
+				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","1")));
 				fc.push("{ type:\"any\", regexp:/"
 						, "\\d{" + min + "," + max + "}"
 						, "/, value:\"\"}");
@@ -1523,7 +1522,7 @@ public class Document {
 				break;
 			case Time:
 				min = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("minlength","1")));
-				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","6")));
+				max = Integer.valueOf(typeProperties.getProperty("length",typeProperties.getProperty("maxlength","4")));
 				fc.push("{ type:\"any\", regexp:/"
 						, "\\d{" + min + "," + max + "}"
 						, "/, value:\"\"}");
