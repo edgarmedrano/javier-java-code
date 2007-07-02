@@ -33,7 +33,7 @@ public class AGIService {
 	protected final ExecutorService pool;
 	
 	/** The handler constructor. */
-	protected Constructor handlerConstructor;
+	protected Constructor<?> handlerConstructor;
 
 	/**
 	 * The main method.
@@ -176,7 +176,7 @@ public class AGIService {
 	 * @throws NoSuchMethodException
 	 *             the no such method exception
 	 */
-	public AGIService(Constructor handlerConstructor, int port, int poolSize)
+	public AGIService(Constructor<?> handlerConstructor, int port, int poolSize)
 			throws IOException, ClassNotFoundException, SecurityException,
 			NoSuchMethodException {
 		this.handlerConstructor = handlerConstructor;

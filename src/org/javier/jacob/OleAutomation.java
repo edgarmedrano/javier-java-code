@@ -54,7 +54,7 @@ public class OleAutomation implements InvocationHandler {
 	private static class MethodName {
 		
 		/** The return class. */
-		public Class returnClazz;
+		public Class<?> returnClazz;
 		
 		/** The method. */
 		public Method method;
