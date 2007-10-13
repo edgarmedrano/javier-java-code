@@ -16,13 +16,17 @@ import static org.javier.jacob.SAPI.SpeechStreamFileMode.*;
 import static org.javier.jacob.SAPI.SpeechVoiceSpeakFlags.*;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Properties;
+
 import org.javier.browser.Javier;
 import org.javier.browser.event.JavierListener;
 import org.javier.browser.event.OutputListener;
-import org.javier.browser.handlers.ConsoleLogHandler;
 import org.javier.browser.handlers.InputHandler;
 import org.javier.browser.handlers.MSXMLHTTPNetworkHandler;
+import org.javier.browser.handlers.StreamLogHandler;
 import org.javier.jacob.SAPI.ISpeechObjectTokens;
 import org.javier.jacob.SAPI.SpFileStream;
 import org.javier.jacob.SAPI.SpVoice;
@@ -45,6 +49,7 @@ public class AGIHandler
 	private SpVoice ttsVoice;
 	private String buffer = "";
 	private Javier javier;
+	private String soundsDir = "C:\\cygroot\\asterisk\\var\\lib\\sounds\\";
 	
 	static {
 		ComThread.startMainSTA();		
@@ -59,12 +64,30 @@ public class AGIHandler
 	public void execute(AGIConnection agi) {
 		this.agi = agi;
 		
+	    String ttsProvider = "MSSAPI";
+	    String voiceName = "Rosa";
+	    String homeAddress = "http://localhost/sictel.php";
+	    String logFile = "Javier.log";
+		
+	    try {
+		    Properties properties = new Properties();
+		    
+	        properties.load(new FileInputStream("Javier.properties"));
+	        ttsProvider = properties.getProperty("tts_class", ttsProvider);
+		    voiceName = properties.getProperty("tts_voice", voiceName);
+	    	homeAddress = properties.getProperty("home_address", homeAddress);
+	    	logFile = properties.getProperty("log_file", logFile);
+	    	soundsDir = properties.getProperty("sounds_dir", soundsDir);
+	    } catch (IOException e) {
+	    	
+	    }
+		
 		ComThread.InitMTA();		
 		ttsVoice = (SpVoice) createActiveXObject(SpVoice.class);
 		ISpeechObjectTokens voices = ttsVoice.GetVoices();
 		
 		for(int i = 0; i < voices.Count(); i++) {
-			if(voices.Item(i).GetDescription().indexOf("Rosa") >= 0) {
+			if(voices.Item(i).GetDescription().indexOf(voiceName) >= 0) {
 				ttsVoice.setVoice(voices.Item(i));
 				break;
 			}
@@ -72,15 +95,17 @@ public class AGIHandler
 		javier = new Javier(this,new MSXMLHTTPNetworkHandler());
 		javier.addJavierListener(this);
 		javier.addOutputListener(this);
-		
-		javier.addLogListener(new ConsoleLogHandler());
 		/*
+		javier.setDebugEnabled(true);
+		*/
+		/*
+		javier.addLogListener(new ConsoleLogHandler());
+		*/
 		try {
-			javier.addLogListener(new StreamLogHandler("Javier.log"));
+			javier.addLogListener(new StreamLogHandler(logFile));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-		}
-		*/
+		}		
 		
 		// Translate AGI properties to VoiceXML properties
 		try {
@@ -93,7 +118,7 @@ public class AGIHandler
 		}
 		
 		try {
-			javier.mainLoop("http://localhost/sictel.php");
+			javier.mainLoop(homeAddress);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -225,7 +250,7 @@ public class AGIHandler
 		
 		do {
 			fileName = "javier" + getFileIndex();
-			wavPath = "C:\\cygroot\\asterisk\\var\\lib\\sounds\\" + fileName + ".WAV";
+			wavPath = soundsDir + fileName + ".WAV";
 			wavFile = new File(wavPath);
 		} while(wavFile.exists());
 		

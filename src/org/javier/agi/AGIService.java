@@ -10,11 +10,14 @@
  */
 package org.javier.agi;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -41,16 +44,31 @@ public class AGIService {
 	 * @param args the args
 	 */
 	public static void main(String args[]) {
-		String handlerClass;
-		int port;
-		int poolSize;
+		String handlerClass = AGIScript.class.getName();
+		String bindAddress = "";
+		int port = 4573;
+		int poolSize = 24;
 		
-		handlerClass = args.length > 0 ? args[0] : AGIScript.class.getName();
-		port = args.length > 1 ? Integer.valueOf(args[1]) : 4573;
-		poolSize = args.length > 2 ? Integer.valueOf(args[2]) : 24;
+	    try {
+		    Properties properties = new Properties();
+		    
+	        properties.load(new FileInputStream("AGIService.properties"));
+		    handlerClass = properties.getProperty("handler_class", handlerClass);
+	    	bindAddress = properties.getProperty("bind_address", bindAddress);
+		    
+		    if(properties.containsKey("port")) {
+				port = Integer.parseInt(properties.getProperty("port"));
+		    }
+		    
+		    if(properties.containsKey("pool_size")) {
+				poolSize = Integer.parseInt(properties.getProperty("poolSize", String.valueOf(poolSize)));
+		    }
+	    } catch (IOException e) {
+	    	
+	    }
 		
 		try {
-			new AGIService(handlerClass,port,poolSize).run();
+			new AGIService(handlerClass,port,poolSize,bindAddress).run();
 		} catch (SecurityException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -141,6 +159,7 @@ public class AGIService {
 	 *            the handler class
 	 * @param poolSize
 	 *            the pool size
+	 * @param bindAddress 
 	 * 
 	 * @throws SecurityException
 	 *             the security exception
@@ -151,10 +170,10 @@ public class AGIService {
 	 * @throws NoSuchMethodException
 	 *             the no such method exception
 	 */
-	public AGIService(String handlerClass, int port, int poolSize)
+	public AGIService(String handlerClass, int port, int poolSize, String bindAddress)
 			throws IOException, ClassNotFoundException, SecurityException,
 			NoSuchMethodException {
-		this(Class.forName(handlerClass).getConstructor(new Class<?>[] {}), port, poolSize);
+		this(Class.forName(handlerClass).getConstructor(new Class<?>[] {}), port, poolSize, bindAddress);
 	}
 
 	/**
@@ -166,6 +185,7 @@ public class AGIService {
 	 *            the handler constructor
 	 * @param poolSize
 	 *            the pool size
+	 * @param bindAddress 
 	 * 
 	 * @throws SecurityException
 	 *             the security exception
@@ -176,7 +196,7 @@ public class AGIService {
 	 * @throws NoSuchMethodException
 	 *             the no such method exception
 	 */
-	public AGIService(Constructor<?> handlerConstructor, int port, int poolSize)
+	public AGIService(Constructor<?> handlerConstructor, int port, int poolSize, String bindAddress)
 			throws IOException, ClassNotFoundException, SecurityException,
 			NoSuchMethodException {
 		this.handlerConstructor = handlerConstructor;
@@ -193,8 +213,13 @@ public class AGIService {
 		if(!implementsScript) {
 			throw(new ClassNotFoundException(clazz.getName() + " doesn't implement " + AGIScript.class.getName() + " interface"));
 		}
+
+		if(bindAddress != null && !bindAddress.equals("")) {
+			serverSocket = new ServerSocket(port,0, InetAddress.getByName(bindAddress));
+		} else {
+			serverSocket = new ServerSocket(port);
+		}
 		
-		serverSocket = new ServerSocket(port);
 		pool = Executors.newFixedThreadPool(poolSize);
 	}
 
@@ -218,7 +243,7 @@ public class AGIService {
 	/**
 	 * Shutdown.
 	 */
-	protected void shutdown() {
+	public void shutdown() {
 		pool.shutdown(); // Disable new tasks from being submitted
 		try {
 			// Wait a while for existing tasks to terminate
