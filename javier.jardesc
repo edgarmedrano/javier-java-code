@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="WINDOWS-1252" standalone="no"?>
 <jardesc>
     <jar path="C:/Javier_dist/lib/javier.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/Javier/javier.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
@@ -15,9 +15,9 @@
         <javaElement handleIdentifier="=Javier/&lt;org.javier.jacob"/>
         <javaElement handleIdentifier="=Javier/&lt;org.javier.browser.handlers"/>
         <javaElement handleIdentifier="=Javier/&lt;org.javier.browser"/>
+        <javaElement handleIdentifier="=Javier/&lt;org.javier.agi"/>
         <javaElement handleIdentifier="=Javier/&lt;org.javier.util"/>
         <javaElement handleIdentifier="=Javier/&lt;org.javier.browser.event"/>
-        <javaElement handleIdentifier="=Javier/&lt;org.javier.agi"/>
         <javaElement handleIdentifier="=Javier/&lt;org.javier.jacob.SAPI"/>
         <file path="/Javier/src/LICENSE.txt"/>
     </selectedElements>

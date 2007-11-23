@@ -14,9 +14,6 @@ import java.awt.BorderLayout;
 import java.awt.Button;
 import java.awt.Container;
 import java.awt.FlowLayout;
-import java.awt.Frame;
-import java.awt.TextArea;
-import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -37,6 +34,11 @@ import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 import javax.script.ScriptException;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 /**
  * A simple JavaScript debugger
@@ -49,10 +51,10 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	private ScriptEngine se;
 
 	/** The frame used to watch. */
-	private Frame frame;
+	private JFrame frame;
 
 	/** The text area used to watch the code and follow the execution. */
-	private TextArea txtCode;
+	private JTextArea txtCode;
 	
 	/** It's used to set a breakpoint. */
 	private int breakPoint = -1;
@@ -73,7 +75,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	private int line = 1;
 
 	/** The label uses to show the current execution line. */
-	private TextField txtLine;
+	private JTextField txtLine;
 
 	/** 
 	 * When this field is set to <code>true</code> an exception is thrown to 
@@ -82,7 +84,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	private boolean stop;
 
 	/** The text area used to watch the variable's values. */
-	private TextArea txtBindings;
+	private JTextArea txtBindings;
 	
 	/**
 	 * @param debug Enable/disable debug from start
@@ -91,10 +93,13 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	public ScriptDebugger(ScriptEngine se, boolean debug) {
 		this.se = se;
 		this.debugOn = debug;
+		initGUI();
+	}
 
-		frame = new Frame();
-		frame.setLayout(new BorderLayout());
-		txtCode = new TextArea();
+	private void initGUI() {
+		JPanel content = new JPanel();
+		content.setLayout(new BorderLayout());
+		txtCode = new JTextArea();
 		txtCode.setEditable(false);
 		txtCode.addMouseListener(new MouseAdapter() {
 			public void mouseReleased(MouseEvent arg0) {
@@ -115,13 +120,13 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 			}
 		});
 		
-		frame.add(txtCode, BorderLayout.CENTER);
-		txtBindings = new TextArea();
+		content.add(new JScrollPane(txtCode), BorderLayout.CENTER);
+		txtBindings = new JTextArea();
 		txtBindings.setEditable(false);
-		frame.add(txtBindings, BorderLayout.EAST);
+		content.add(new JScrollPane(txtBindings), BorderLayout.EAST);
 		Container cont = new Container();
 		cont.setLayout(new FlowLayout());
-		frame.add(cont, BorderLayout.SOUTH);
+		content.add(cont, BorderLayout.SOUTH);
 		final Button btnGoto = new Button("Go to");
 		cont.add(btnGoto);
 		btnGoto.addActionListener(new ActionListener() {
@@ -130,7 +135,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 				bypass = true;
 			}
 		});
-		txtLine = new TextField();
+		txtLine = new JTextField();
 		cont.add(txtLine);
 		final Button btnContinue = new Button("Continue");
 		cont.add(btnContinue);
@@ -156,10 +161,12 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 				}
 			});
 		
+		frame = new JFrame();
+		frame.setContentPane(content);
 		frame.addWindowListener(new WindowAdapter() {
 		        public void windowClosing(WindowEvent evt) {
 					bypass = true;
-		            frame.setVisible(false);
+					frame.setVisible(false);
 		        }
 	        });
 		
@@ -186,9 +193,10 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 						*/
 				}
 			}
-        });
+        });		
+		
 	}
-
+	
 	/**
 	 * @param se    the script engine to be watched
 	 */
@@ -231,6 +239,11 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 
 		txtLine.setText(String.valueOf(line));
 		txtCode.requestFocus();
+		/*
+		txtCode.setEnabled(true);
+		txtCode.getCaret().setVisible(true); 
+		txtCode.getCaret().setSelectionVisible( true );
+		*/
 		txtCode.setCaretPosition(start);
 		txtCode.setSelectionStart(start);
 		txtCode.setSelectionEnd(end);

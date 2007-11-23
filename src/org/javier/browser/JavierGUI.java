@@ -24,9 +24,12 @@ import javax.swing.JToolBar;
 import javax.swing.JButton;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+
 import java.awt.Dimension;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 
 import javax.swing.BoxLayout;
@@ -45,14 +48,6 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 
 	private static final long serialVersionUID = 1L;
 	private static final int KEY_1 = 0;
-	private static final int KEY_2 = 1;
-	private static final int KEY_3 = 2;
-	private static final int KEY_4 = 3;
-	private static final int KEY_5 = 4;
-	private static final int KEY_6 = 5;
-	private static final int KEY_7 = 6;
-	private static final int KEY_8 = 7;
-	private static final int KEY_9 = 8;
 	private static final int KEY_AST = 9;
 	private static final int KEY_0 = 10;
 	private static final int KEY_POUND = 11;
@@ -306,11 +301,16 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 			btnGo.setText("Go");
 			btnGo.addActionListener(new java.awt.event.ActionListener() {
 				public void actionPerformed(java.awt.event.ActionEvent e) {
-					try {
-						javier.mainLoop(txtAddress.getText());
-					} catch (IOException ex) {
-						ex.printStackTrace();
-					}
+					new Thread() {
+						@Override
+						public void run() {
+							try {
+								javier.mainLoop(txtAddress.getText());
+							} catch (IOException ex) {
+								ex.printStackTrace();
+							}
+						}
+					}.start();
 				}
 			});
 		}
@@ -360,24 +360,36 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 		return javier;
 	}
 
+	/**
+	 * Sets the javier engine.
+	 * 
+	 * @param javier
+	 *            the javier
+	 */
 	private void setJavier(Javier javier) {
 		this.javier = javier;
 	}
 
-	@Override
+	/* (non-Javadoc)
+	 * @see org.javier.browser.handlers.InputHandler#getInput(java.lang.String)
+	 */
 	public String getInput(String text) throws IOException {
 		return getInput(text,"");
 	}
 
-	@Override
+	/* (non-Javadoc)
+	 * @see org.javier.browser.handlers.InputHandler#getInput(java.lang.String, java.lang.String)
+	 */
 	public String getInput(String text, String value) throws IOException {
 		return getInput(text,"",0,256);
 	}
 
-	@Override
+	/* (non-Javadoc)
+	 * @see org.javier.browser.handlers.InputHandler#getInput(java.lang.String, java.lang.String, int, int)
+	 */
 	public String getInput(String text, String value, int min, int max)
 			throws IOException {
-		/*
+		
 		String strInput;
 		
 		try {
@@ -389,8 +401,8 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 		strInput = txtInput.getText();
 		txtInput.setText("");
 		return strInput;
-		*/
-		return JOptionPane.showInputDialog(this, text, value);
+		
+		/*return JOptionPane.showInputDialog(this, text, value);*/
 	}
 
 	@Override
@@ -793,5 +805,8 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 		return pnlKeypad;
 	}
 
+    public static void main( String[] args ) {
+    	(new JavierGUI()).setVisible(true);
+    }
 
 }  //  @jve:decl-index=0:visual-constraint="97,30"
