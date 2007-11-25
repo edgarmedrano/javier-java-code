@@ -24,12 +24,9 @@ import javax.swing.JToolBar;
 import javax.swing.JButton;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
-
 import java.awt.Dimension;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 
 import javax.swing.BoxLayout;
@@ -43,6 +40,7 @@ import org.javier.browser.handlers.SAPIOutputHandler;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JToggleButton;
 import java.awt.GridLayout;
+import javax.swing.JScrollPane;
 
 public class JavierGUI extends JFrame implements InputHandler, JavierListener, OutputListener, ErrorListener {
 
@@ -87,6 +85,7 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 	private JToolBar tlbKeypad = null;
 	private JButton btnKey[] = null;
 	private JPanel pnlKeypad = null;
+	private JScrollPane scrMessage = null;
 	/**
 	 * This is the default constructor
 	 */
@@ -216,8 +215,8 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 		if (splMain == null) {
 			splMain = new JSplitPane();
 			splMain.setOrientation(JSplitPane.VERTICAL_SPLIT);
-			splMain.setTopComponent(getTxtMessage());
 			splMain.setBottomComponent(getTxtInput());
+			splMain.setTopComponent(getScrMessage());
 			splMain.setDividerLocation(100);
 		}
 		return splMain;
@@ -390,15 +389,26 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 	public String getInput(String text, String value, int min, int max)
 			throws IOException {
 		
-		String strInput;
+		String strInput = "";
+
+		for (int i =0; i < 100; i++) {
+			strInput = txtInput.getText();
+			
+			if(strInput.length() >= max) {
+				break;
+			}
+			
+			if(strInput.contains("#")) {
+				break;
+			}
+			
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		} 
 		
-		try {
-			Thread.sleep(10000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		
-		strInput = txtInput.getText();
 		txtInput.setText("");
 		return strInput;
 		
@@ -805,7 +815,20 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 		return pnlKeypad;
 	}
 
-    public static void main( String[] args ) {
+    /**
+	 * This method initializes scrMessage.
+	 * 
+	 * @return javax.swing.JScrollPane
+	 */
+	private JScrollPane getScrMessage() {
+		if (scrMessage == null) {
+			scrMessage = new JScrollPane();
+			scrMessage.setViewportView(getTxtMessage());
+		}
+		return scrMessage;
+	}
+
+	public static void main( String[] args ) {
     	(new JavierGUI()).setVisible(true);
     }
 

@@ -11,22 +11,6 @@
 package org.javier.util;
 
 import java.awt.BorderLayout;
-import java.awt.Button;
-import java.awt.Container;
-import java.awt.FlowLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.concurrent.TimeUnit;
 
 import javax.script.Bindings;
 import javax.script.Invocable;
@@ -34,27 +18,71 @@ import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 import javax.script.ScriptException;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
+import javax.swing.JFrame;
+import javax.swing.JSplitPane;
+import java.awt.FlowLayout;
+import javax.swing.JButton;
 import javax.swing.JTextField;
+import java.awt.Dimension;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.concurrent.TimeUnit;
+
+import javax.swing.JTextArea;
+import javax.swing.JScrollPane;
 
 /**
- * A simple JavaScript debugger
- * 
- * @author Edgar Medrano Pérez
+ * A simple JavaScript debugger implemented as an ScriptEngine wrapper.
+ * <p><i>Usage:</i>
+ * <pre>ScriptEngine seJavaScript = sem.getEngineByName("JavaScript");
+ * seJavaScript = new ScriptDebugger(seJavaScript, true);</pre></p>
  */
-public class ScriptDebugger implements ScriptEngine, Invocable {
+public class ScriptDebugger extends JFrame implements ScriptEngine, Invocable{
 
+	/** The Constant serialVersionUID. */
+	private static final long serialVersionUID = 1L;
+	
+	/** The j content pane. */
+	private JPanel jContentPane = null;
+	
+	/** The j panel. */
+	private JPanel jPanel = null;
+	
+	/** The j split pane. */
+	private JSplitPane jSplitPane = null;
+	
+	/** The btn goto. */
+	private JButton btnGoto = null;
+	
+	/** The txt line. */
+	private JTextField txtLine = null;
+	
+	/** The btn continue. */
+	private JButton btnContinue = null;
+	
+	/** The btn step. */
+	private JButton btnStep = null;
+	
+	/** The btn stop. */
+	private JButton btnStop = null;
+	
+	/** The txt code. */
+	private JTextArea txtCode = null;
+	
+	/** The txt bindings. */
+	private JTextArea txtBindings = null;
+	
+	/** The scr code. */
+	private JScrollPane scrCode = null;
+	
+	/** The scr bindings. */
+	private JScrollPane scrBindings = null;
+	
 	/** The script engine to be watched. */
 	private ScriptEngine se;
-
-	/** The frame used to watch. */
-	private JFrame frame;
-
-	/** The text area used to watch the code and follow the execution. */
-	private JTextArea txtCode;
 	
 	/** It's used to set a breakpoint. */
 	private int breakPoint = -1;
@@ -62,9 +90,9 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	/** It's used to eventually enable/disable debugging. */
 	private boolean bypass;
 
-	/** 
-	 * The program execution is halt until this field is set to 
-	 * <code>true</code>. 
+	/**
+	 * The program execution is halt until this field is set to
+	 * <code>true</code>.
 	 */
 	private boolean step;
 
@@ -74,149 +102,279 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	/** The current execution line. */
 	private int line = 1;
 
-	/** The label uses to show the current execution line. */
-	private JTextField txtLine;
-
-	/** 
-	 * When this field is set to <code>true</code> an exception is thrown to 
-	 * stop the script execution. 
+	/**
+	 * When this field is set to <code>true</code> an exception is thrown to
+	 * stop the script execution.
 	 */
 	private boolean stop;
 
-	/** The text area used to watch the variable's values. */
-	private JTextArea txtBindings;
-	
 	/**
-	 * @param debug Enable/disable debug from start
-	 * @param se    the script engine to be watched
+	 * This is the default constructor.
 	 */
-	public ScriptDebugger(ScriptEngine se, boolean debug) {
-		this.se = se;
-		this.debugOn = debug;
-		initGUI();
+	public ScriptDebugger() {
+		super();
+		
+		initialize();
 	}
 
-	private void initGUI() {
-		JPanel content = new JPanel();
-		content.setLayout(new BorderLayout());
-		txtCode = new JTextArea();
-		txtCode.setEditable(false);
-		txtCode.addMouseListener(new MouseAdapter() {
-			public void mouseReleased(MouseEvent arg0) {
-				String code = txtCode.getText();
-				int line = 1;
-				int selection = txtCode.getCaretPosition();
-				int position = 0;
-				
-				while(position >= 0 && position < selection) {
-					position = code.indexOf("\n", position);
-					if(position < selection) {
-						position++;
-						line ++;						
-					}
+	/**
+	 * The Constructor.
+	 * 
+	 * @param se
+	 *            the script engine to be watched
+	 * @param debug
+	 *            Enable/disable debug from start
+	 */
+	public ScriptDebugger(ScriptEngine se, boolean debug) {
+		this();
+		this.se = se;
+		this.debugOn = debug;
+	}
+
+	/**
+	 * This method initializes this.
+	 * 
+	 * @return void
+	 */
+	private void initialize() {
+		this.setContentPane(getJContentPane());
+		this.setSize(353, 205);
+		this.setTitle("JFrame");
+		this.addWindowListener(new java.awt.event.WindowAdapter() {
+			public void windowClosing(java.awt.event.WindowEvent e) {
+				bypass = true;
+				e.getWindow().setVisible(false);
+			}
+		});
+	}
+
+	/**
+	 * This method initializes jContentPane.
+	 * 
+	 * @return javax.swing.JPanel
+	 */
+	private JPanel getJContentPane() {
+		if (jContentPane == null) {
+			jContentPane = new JPanel();
+			jContentPane.setLayout(new BorderLayout());
+			jContentPane.add(getJPanel(), BorderLayout.SOUTH);
+			jContentPane.add(getJSplitPane(), BorderLayout.CENTER);
+		}
+		return jContentPane;
+	}
+
+	/**
+	 * This method initializes jPanel.
+	 * 
+	 * @return javax.swing.JPanel
+	 */
+	private JPanel getJPanel() {
+		if (jPanel == null) {
+			jPanel = new JPanel();
+			jPanel.setLayout(new FlowLayout());
+			jPanel.add(getBtnGoto(), null);
+			jPanel.add(getTxtLine(), null);
+			jPanel.add(getBtnContinue(), null);
+			jPanel.add(getBtnStep(), null);
+			jPanel.add(getBtnStop(), null);
+		}
+		return jPanel;
+	}
+
+	/**
+	 * This method initializes jSplitPane.
+	 * 
+	 * @return javax.swing.JSplitPane
+	 */
+	private JSplitPane getJSplitPane() {
+		if (jSplitPane == null) {
+			jSplitPane = new JSplitPane();
+			jSplitPane.setDividerLocation(200);
+			jSplitPane.setRightComponent(getScrBindings());
+			jSplitPane.setLeftComponent(getScrCode());
+		}
+		return jSplitPane;
+	}
+
+	/**
+	 * This method initializes btnGoto.
+	 * 
+	 * @return javax.swing.JButton
+	 */
+	private JButton getBtnGoto() {
+		if (btnGoto == null) {
+			btnGoto = new JButton();
+			btnGoto.setText("Go to");
+			btnGoto.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+					breakPoint = line;
+					bypass = true;
 				}
-		
-				txtLine.setText(String.valueOf(line));
-			}
-		});
-		
-		content.add(new JScrollPane(txtCode), BorderLayout.CENTER);
-		txtBindings = new JTextArea();
-		txtBindings.setEditable(false);
-		content.add(new JScrollPane(txtBindings), BorderLayout.EAST);
-		Container cont = new Container();
-		cont.setLayout(new FlowLayout());
-		content.add(cont, BorderLayout.SOUTH);
-		final Button btnGoto = new Button("Go to");
-		cont.add(btnGoto);
-		btnGoto.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				breakPoint = Integer.parseInt(txtLine.getText());
-				bypass = true;
-			}
-		});
-		txtLine = new JTextField();
-		cont.add(txtLine);
-		final Button btnContinue = new Button("Continue");
-		cont.add(btnContinue);
-		btnContinue.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				bypass = true;
-			}
-		});
-		final Button btnStep = new Button("Step");
-		cont.add(btnStep);
-		btnStep.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
+			});
+		}
+		return btnGoto;
+	}
+
+	/**
+	 * This method initializes txtLine.
+	 * 
+	 * @return javax.swing.JTextField
+	 */
+	public JTextField getTxtLine() {
+		if (txtLine == null) {
+			txtLine = new JTextField();
+			txtLine.setText("");
+			txtLine.setPreferredSize(new Dimension(25, 20));
+		}
+		return txtLine;
+	}
+
+	/**
+	 * This method initializes btnContinue.
+	 * 
+	 * @return javax.swing.JButton
+	 */
+	private JButton getBtnContinue() {
+		if (btnContinue == null) {
+			btnContinue = new JButton();
+			btnContinue.setText("Continue");
+			btnContinue.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+					bypass = true;
+				}
+			});
+		}
+		return btnContinue;
+	}
+
+	/**
+	 * This method initializes btnStep.
+	 * 
+	 * @return javax.swing.JButton
+	 */
+	private JButton getBtnStep() {
+		if (btnStep == null) {
+			btnStep = new JButton();
+			btnStep.setText("Step");
+			btnStep.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
 					step = true;
 					bypass = false;
 				}
 			});
-		final Button btnStop = new Button("Stop");
-		cont.add(btnStop);
-		btnStop.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
+		}
+		return btnStep;
+	}
+
+	/**
+	 * This method initializes btnStop.
+	 * 
+	 * @return javax.swing.JButton
+	 */
+	private JButton getBtnStop() {
+		if (btnStop == null) {
+			btnStop = new JButton();
+			btnStop.setText("Stop");
+			btnStop.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
 					stop = true;
 					bypass = true;
 				}
 			});
-		
-		frame = new JFrame();
-		frame.setContentPane(content);
-		frame.addWindowListener(new WindowAdapter() {
-		        public void windowClosing(WindowEvent evt) {
-					bypass = true;
-					frame.setVisible(false);
-		        }
-	        });
-		
-		frame.addKeyListener(new KeyListener() {
-			public void keyPressed(KeyEvent key) { }
-
-			public void keyReleased(KeyEvent key) { }
-
-			public void keyTyped(KeyEvent key) {
-				switch(key.getKeyCode()) {
-					case KeyEvent.VK_F8:
-						btnContinue.dispatchEvent(new ActionEvent(btnContinue,ActionEvent.ACTION_PERFORMED, ""));
-						break;
-					case KeyEvent.VK_F5:
-						btnStep.dispatchEvent(new ActionEvent(btnStep,ActionEvent.ACTION_PERFORMED, ""));
-						break;
-						/*
-					case KeyEvent.VK_F6:
-						btnStep.dispatchEvent(new ActionEvent(btnStep,ActionEvent.ACTION_PERFORMED, ""));
-						break;
-					case KeyEvent.VK_F6:
-						btnStep.dispatchEvent(new ActionEvent(btnStep,ActionEvent.ACTION_PERFORMED, ""));
-						break;
-						*/
-				}
-			}
-        });		
-		
+		}
+		return btnStop;
 	}
-	
+
 	/**
-	 * @param se    the script engine to be watched
+	 * This method initializes txtCode.
+	 * 
+	 * @return javax.swing.JTextArea
 	 */
-	public ScriptDebugger(ScriptEngine se) {
-		this(se,true);
+	public JTextArea getTxtCode() {
+		if (txtCode == null) {
+			txtCode = new JTextArea();
+			txtCode.setTabSize(4);
+			txtCode.setEditable(false);
+			txtCode.setBorder(new LineNumberedBorder(LineNumberedBorder.LEFT_SIDE, LineNumberedBorder.RIGHT_JUSTIFY));
+			txtCode.addMouseListener(new java.awt.event.MouseAdapter() {
+				public void mouseReleased(java.awt.event.MouseEvent e) {
+					String code = txtCode.getText();
+					int line = 1;
+					int selection = txtCode.getCaretPosition();
+					int position = 0;
+					
+					while(position >= 0 && position < selection) {
+						position = code.indexOf("\n", position);
+						if(position < selection) {
+							position++;
+							line ++;						
+						}
+					}
+			
+					txtLine.setText(String.valueOf(line));
+				}
+			});
+		}
+		return txtCode;
 	}
 
 	/**
-	 * This method is used to make a callback. A call to this method is 
-	 * inserted in almost every script line, like this:
+	 * This method initializes txtBindings.
 	 * 
-	 *  <code>if(__DEBUG__.cb(111,(function() {}).__parent__)) 
-	 *  	throw("error.debug.stop");</code>
+	 * @return javax.swing.JTextArea
+	 */
+	public JTextArea getTxtBindings() {
+		if (txtBindings == null) {
+			txtBindings = new JTextArea();
+			txtBindings.setEditable(false);
+		}
+		return txtBindings;
+	}
+
+	/**
+	 * This method initializes scrCode.
 	 * 
-	 * @param ref the reference to the current scope
-	 * @param line the current execution line
+	 * @return javax.swing.JScrollPane
+	 */
+	private JScrollPane getScrCode() {
+		if (scrCode == null) {
+			scrCode = new JScrollPane();
+			scrCode.setViewportView(getTxtCode());
+		}
+		return scrCode;
+	}
+
+	/**
+	 * This method initializes scrBindings.
+	 * 
+	 * @return javax.swing.JScrollPane
+	 */
+	private JScrollPane getScrBindings() {
+		if (scrBindings == null) {
+			scrBindings = new JScrollPane();
+			scrBindings.setViewportView(getTxtBindings());
+		}
+		return scrBindings;
+	}
+
+	/**
+	 * This method is used to make a callback. A call to this method is inserted
+	 * in almost every script line, like this:
+	 * 
+	 * <code>if(__DEBUG__.cb(111,__DUMP__(this),__DUMP__((function() {}).__parent__))
+	 * throw("error.debug.stop");</code>
+	 * 
+	 * @param global
+	 *            the global scope variables dump
+	 * @param line
+	 *            the current execution line
+	 * @param local
+	 *            the local scope variables dump
+	 * 
 	 * @return <code>true</code> if the user press stop button (in the script
-	 *               this will fire the "error.debug.stop" exception.<br>
+	 *         this will fire the "error.debug.stop" exception.<br>
 	 *         <code>false</code> if the user press step (in the script this
-	 *               will continue with the execution)
+	 *         will continue with the execution)
 	 */
 	public boolean cb(int line, String local, String global) {
 		String code;
@@ -239,11 +397,6 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 
 		txtLine.setText(String.valueOf(line));
 		txtCode.requestFocus();
-		/*
-		txtCode.setEnabled(true);
-		txtCode.getCaret().setVisible(true); 
-		txtCode.getCaret().setSelectionVisible( true );
-		*/
 		txtCode.setCaretPosition(start);
 		txtCode.setSelectionStart(start);
 		txtCode.setSelectionEnd(end);
@@ -287,7 +440,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		} catch(ScriptException e) {
 			throw(e);
 		} finally {
-	        frame.setVisible(false);			
+	        setVisible(false);			
 		}
 	}
 
@@ -302,7 +455,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		} catch(ScriptException e) {
 			throw(e);
 		} finally {
-	        frame.setVisible(false);			
+	        setVisible(false);			
 		}
 	}
 
@@ -318,7 +471,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		} catch(ScriptException e) {
 			throw(e);
 		} finally {
-	        frame.setVisible(false);			
+	        setVisible(false);			
 		}
 	}
 
@@ -333,7 +486,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		} catch(ScriptException e) {
 			throw(e);
 		} finally {
-	        frame.setVisible(false);			
+	        setVisible(false);			
 		}
 	}
 
@@ -348,7 +501,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		} catch(ScriptException e) {
 			throw(e);
 		} finally {
-	        frame.setVisible(false);			
+	        setVisible(false);			
 		}
 	}
 
@@ -364,7 +517,7 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		} catch(ScriptException e) {
 			throw(e);
 		} finally {
-	        frame.setVisible(false);			
+	        setVisible(false);			
 		}
 	}
 
@@ -420,9 +573,9 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		} catch (ScriptException e) {
 			e.printStackTrace();
 		}
-		frame.pack();
-		frame.setVisible(debugOn);
-		frame.requestFocus();
+		pack();
+		setVisible(debugOn);
+		requestFocus();
 	}
 
 	/* (non-Javadoc)
@@ -430,14 +583,14 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	 */
 	public Object invokeFunction(String name, Object... args)
 			throws ScriptException, NoSuchMethodException {
-		frame.setVisible(debugOn);
+		setVisible(debugOn);
 		
 		try {
 			return ((Invocable) se).invokeFunction(name, args);
 		} catch(ScriptException e) {
 			throw(e);
 		} finally {
-	        frame.setVisible(false);			
+	        setVisible(false);			
 		}
 		
 	}
@@ -447,14 +600,14 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	 */
 	public Object invokeMethod(Object thiz, String name, Object... args)
 			throws ScriptException, NoSuchMethodException {
-		frame.setVisible(debugOn);
+		setVisible(debugOn);
 		
 		try {
 			return ((Invocable) se).invokeMethod(thiz, name, args);
 		} catch(ScriptException e) {
 			throw(e);
 		} finally {
-	        frame.setVisible(false);			
+	        setVisible(false);			
 		}
 	}
 
@@ -499,22 +652,24 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	}
 
 	/**
-	 * Turns on/off the debug for next script execution. It won't enable
-	 * debug in the current execution, but sure it will disable if you
-	 * set it to <code>false</code>.
+	 * Turns on/off the debug for next script execution. It won't enable debug
+	 * in the current execution, but sure it will disable if you set it to
+	 * <code>false</code>.
 	 * 
-	 * @param debugOn	<code>true</code> to turn on the debug
+	 * @param debugOn
+	 *            <code>true</code> to turn on the debug
 	 */
 	public void setDebugOn(boolean debugOn) {
 		this.debugOn = debugOn;
 		bypass = !debugOn;
-		frame.setVisible(debugOn);
+		setVisible(debugOn);
 	}
 
 	/**
 	 * Insert debug calls to code.
 	 * 
-	 * @param code the code to be modified
+	 * @param code
+	 *            the code to be modified
 	 * 
 	 * @return the code with debug calls
 	 */
@@ -657,11 +812,12 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 	}
 
 	/**
-	 * Creates a wrapper to insert debug calls in the code read.
-	 * It actually reads all the content from the reader,
-	 * setup the code and returns a StringReader.
+	 * Creates a wrapper to insert debug calls in the code read. It actually
+	 * reads all the content from the reader, setup the code and returns a
+	 * StringReader.
 	 * 
-	 * @param reader the reader to be wrapped
+	 * @param reader
+	 *            the reader to be wrapped
 	 * 
 	 * @return the wrapped reader with debug calls
 	 */
@@ -680,4 +836,5 @@ public class ScriptDebugger implements ScriptEngine, Invocable {
 		
 		return new StringReader(setup(code.toString()));
 	}
-}
+
+}  //  @jve:decl-index=0:visual-constraint="10,10"
