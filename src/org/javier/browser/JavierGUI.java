@@ -390,8 +390,24 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 			throws IOException {
 		
 		String strInput = "";
+		String timeout = javier.getProperty("timeout");
+		long time = 0;
+		
+		if(timeout.indexOf("ms") >= 0) {
+			timeout = timeout.replaceFirst("ms", "");
+			time = Long.parseLong(timeout);
+		} else {
+			if(timeout.indexOf("s") > 0) {
+				timeout = timeout.replaceFirst("s", "");
+				time = Long.parseLong(timeout) * 1000;
+			}
+		}		
+		
+		if(time == 0) {
+			time = 10000;
+		}
 
-		for (int i =0; i < 100; i++) {
+		for (long i =0; i < time; i += 10) {
 			strInput = txtInput.getText();
 			
 			if(strInput.length() >= max) {
@@ -403,61 +419,84 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 			}
 			
 			try {
-				Thread.sleep(100);
+				Thread.sleep(10);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		} 
 		
 		txtInput.setText("");
+		txtMessage.setText(txtMessage.getText() + "\nYou: " + strInput);
+		txtMessage.setCaretPosition(txtMessage.getText().length());
 		return strInput;
 		
 		/*return JOptionPane.showInputDialog(this, text, value);*/
 	}
 
+	/* (non-Javadoc)
+	 * @see org.javier.browser.event.JavierListener#excecutionEnded(int)
+	 */
 	@Override
 	public void excecutionEnded(int endCode) {
 		// TODO Auto-generated method stub
 		
 	}
 
+	/* (non-Javadoc)
+	 * @see org.javier.browser.event.JavierListener#loadStateChanged(int)
+	 */
 	@Override
 	public void loadStateChanged(int readyState) {
 		// TODO Auto-generated method stub
 		
 	}
 
+	/* (non-Javadoc)
+	 * @see org.javier.browser.event.JavierListener#urlChanged(java.lang.String)
+	 */
 	@Override
 	public void urlChanged(String url) {
 		txtAddress.setText(url);
 	}
 
+	/* (non-Javadoc)
+	 * @see org.javier.browser.event.OutputListener#addText(java.lang.String)
+	 */
 	@Override
 	public void addText(String text) throws IOException {
-		txtMessage.setText("Javier: " + text + "\n" + txtMessage.getText());
-		//txtMessage.setText(txtMessage.getText() + text);
+		txtMessage.setText(txtMessage.getText() + "\nJavier: " + text);
+		txtMessage.setCaretPosition(txtMessage.getText().length());
 	}
 
+	/* (non-Javadoc)
+	 * @see org.javier.browser.event.OutputListener#clearText()
+	 */
 	@Override
 	public void clearText() throws IOException {
 		//txtMessage.setText("");
 	}
 
+	/* (non-Javadoc)
+	 * @see org.javier.browser.event.OutputListener#waitUntilDone()
+	 */
 	@Override
 	public void waitUntilDone() throws IOException {
 		// TODO Auto-generated method stub
 		
 	}
 
+	/* (non-Javadoc)
+	 * @see org.javier.browser.event.ErrorListener#errorFound(java.lang.String)
+	 */
 	@Override
 	public void errorFound(String description) {
 		JOptionPane.showMessageDialog(this, description);
 	}
 
 	/**
-	 * This method initializes mnuView	
-	 * 	
-	 * @return javax.swing.JMenu	
+	 * This method initializes mnuView.
+	 * 
+	 * @return javax.swing.JMenu
 	 */
 	private JMenu getMnuView() {
 		if (mnuView == null) {
