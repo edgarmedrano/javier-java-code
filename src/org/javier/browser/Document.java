@@ -124,9 +124,6 @@ public class Document {
 	
 	/** The document's listeners. */
 	private final Vector<DocumentListener> vecListeners = new Vector<DocumentListener>();
-
-	/** The script engine used to evaluate the document's JavaScript code. */
-	protected ScriptEngine seJavaScript;
 	
 	/** The properties. */
 	protected Properties properties;
@@ -151,8 +148,6 @@ public class Document {
 	public Document(String url) {
 		this(url,"GET","",0,0,0);
 		state = State.CREATED;
-		seJavaScript = sem.getEngineByName("JavaScript");
-		seJavaScript = new ScriptDebugger(seJavaScript, true);
 	}
 		
 	/**
@@ -232,13 +227,22 @@ public class Document {
 		throws ScriptException
 			, NoSuchMethodException {
 		Object nextDoc = null;
-		Invocable invocableEngine = (Invocable)seJavaScript;
+		/** The script engine used to evaluate the document's JavaScript code. */
+		ScriptEngine seJavaScript = sem.getEngineByName("JavaScript");
+		Invocable invocableEngine;
 		String jsFunction 
 			= "function aDocument(x) {" 
 				+ this.getJs() 
 				+ "\n}";
 		Bindings newBindings = seJavaScript.createBindings();
 		seJavaScript.setBindings(newBindings, ScriptContext.ENGINE_SCOPE );
+
+		if(__browser__.isDebugEnabled()) {
+			seJavaScript = new ScriptDebugger(seJavaScript, true);
+		}
+		
+		invocableEngine = (Invocable)seJavaScript;
+		
 		
 		try {
 			seJavaScript.eval(new InputStreamReader(Document.class.getResourceAsStream("document.js")));

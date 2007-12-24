@@ -45,10 +45,10 @@ public class Javier
 	implements DocumentListener {
 	
 	/** Signals a successfully ended interpretation. */
-	static public final int END_CODE_SUCCESS = 0;
+	public static final int END_CODE_SUCCESS = 0;
 	
 	/** Signals a erroneously ended interpretation. */
-	static public final int END_CODE_ERROR = 1;
+	public static final int END_CODE_ERROR = 1;
 	
 	/**
 	 * The main method.
@@ -141,7 +141,7 @@ public class Javier
 	/** The current document. */
 	public Document document = new Document();
 	
-	/** Enables/Disables automatic document evaluation. */
+	/** Enable/Disable automatic document evaluation. */
 	protected boolean autoEval = true;
 	
 	/** The execution end code. */
@@ -149,6 +149,9 @@ public class Javier
 	
 	/** Use this to break the main loop. */
 	protected boolean exitMainLoop = false;
+	
+	/** Enable/Disable debugging */
+	protected boolean debugEnabled = false;
 	
 	/** The properties. */
 	protected Properties properties;	
@@ -720,5 +723,24 @@ public class Javier
 	 */
 	public void setProperty(String name, String value) {
 		properties.setProperty(name, value);
+	}
+
+	/**
+	 * Checks if debug is enabled.
+	 * 
+	 * @return <code>true</code>, if auto debug is enabled
+	 */	
+	public boolean isDebugEnabled() {
+		return debugEnabled;
+	}
+
+	/**
+	 * Sets the debug flag. If debug is enabled the 
+	 * documents will be debugged as soon as they're evaluated. 
+	 * 
+	 * @param debugEnabled the debug flag
+	 */	
+	public void setDebugEnabled(boolean debugEnabled) {
+		this.debugEnabled = debugEnabled;
 	}	
 }

@@ -27,6 +27,7 @@ import javax.swing.JTextField;
 import java.awt.Dimension;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Properties;
 
 import javax.swing.BoxLayout;
@@ -42,57 +43,165 @@ import javax.swing.JToggleButton;
 import java.awt.GridLayout;
 import javax.swing.JScrollPane;
 
+/**
+ * JAVIER GUI.
+ */
 public class JavierGUI extends JFrame implements InputHandler, JavierListener, OutputListener, ErrorListener {
-
-	private static final long serialVersionUID = 1L;
-	private static final int KEY_1 = 0;
-	private static final int KEY_AST = 9;
-	private static final int KEY_0 = 10;
-	private static final int KEY_POUND = 11;
-	private JPanel jContentPane = null;
-	private JMenuBar menubar = null;
-	private JMenu mnuFile = null;
-	private JToolBar tlbNavigate = null;
-	private JButton btnHome = null;
-	private JSplitPane splMain = null;
-	private JSeparator sepFile1 = null;
-	private JMenuItem mniExit = null;
-	private JTextField txtAddress = null;
-	private JTextArea txtMessage = null;
-	private JTextArea txtInput = null;
-	private JButton btnGo = null;
-	private Javier javier = null;
-	private String homeAddress;  //  @jve:decl-index=0:
-	private JMenu mnuView = null;
-	private JMenuItem mniOpen = null;
-	private JMenu mnuBookmarks = null;
-	private JMenuItem mniViewJS = null;
-	private JMenuItem mniViewVXML = null;
-	private JButton btnBack = null;
-	private JButton btnForward = null;
-	private JMenu mnuGoTo = null;
-	private JSeparator sepView1 = null;
-	private JMenuItem mniBack = null;
-	private JMenuItem mniForward = null;
-	private JSeparator sepViewGoTo1 = null;
-	private JMenuItem mniHome = null;
-	private JMenuItem mniAddBookmark = null;
-	private JSeparator sepBookmark1 = null;
-	private JCheckBoxMenuItem mniAutoRun = null;
-	private JPanel pnlCenter = null;
-	private JToolBar tlbChat = null;
-	private JToggleButton tglKeypad = null;
-	private JToolBar tlbKeypad = null;
-	private JButton btnKey[] = null;
-	private JPanel pnlKeypad = null;
-	private JScrollPane scrMessage = null;
+	
 	/**
-	 * This is the default constructor
+	 * The Enum HistoryManagement.
+	 */
+	private enum HistoryManagement { /** The ADD. */
+		 ADD, /** The NAVIGATE. */
+		 NAVIGATE, /** The CLEAR. */
+		 CLEAR }
+	
+	/** The Constant serialVersionUID. */
+	private static final long serialVersionUID = 1L;
+	
+	/** The Constant KEY_1. */
+	private static final int KEY_1 = 0;
+	
+	/** The Constant KEY_AST. */
+	private static final int KEY_AST = 9;
+	
+	/** The Constant KEY_0. */
+	private static final int KEY_0 = 10;
+	
+	/** The Constant KEY_POUND. */
+	private static final int KEY_POUND = 11;
+	
+	/** The j content pane. */
+	private JPanel jContentPane = null;
+	
+	/** The menubar. */
+	private JMenuBar menubar = null;
+	
+	/** The mnu file. */
+	private JMenu mnuFile = null;
+	
+	/** The tlb navigate. */
+	private JToolBar tlbNavigate = null;
+	
+	/** The btn home. */
+	private JButton btnHome = null;
+	
+	/** The spl main. */
+	private JSplitPane splMain = null;
+	
+	/** The sep file1. */
+	private JSeparator sepFile1 = null;
+	
+	/** The mni exit. */
+	private JMenuItem mniExit = null;
+	
+	/** The txt address. */
+	private JTextField txtAddress = null;
+	
+	/** The txt message. */
+	private JTextArea txtMessage = null;
+	
+	/** The txt input. */
+	private JTextArea txtInput = null;
+	
+	/** The btn go. */
+	private JButton btnGo = null;
+	
+	/** The javier. */
+	private Javier javier = null;
+	
+	/** The home address. */
+	private String homeAddress;  //  @jve:decl-index=0:
+	
+	/** The input ready. */
+	private boolean inputReady = false;
+	
+	/** The history. */
+	private ArrayList<String> history = new ArrayList<String>();  //  @jve:decl-index=0:
+	
+	/** The history index. */
+	private int historyIndex = -1;
+	
+	/** The mnu view. */
+	private JMenu mnuView = null;
+	
+	/** The mni open. */
+	private JMenuItem mniOpen = null;
+	
+	/** The mnu bookmarks. */
+	private JMenu mnuBookmarks = null;
+	
+	/** The mni view JS. */
+	private JMenuItem mniViewJS = null;
+	
+	/** The mni view VXML. */
+	private JMenuItem mniViewVXML = null;
+	
+	/** The btn back. */
+	private JButton btnBack = null;
+	
+	/** The btn forward. */
+	private JButton btnForward = null;
+	
+	/** The mnu go to. */
+	private JMenu mnuGoTo = null;
+	
+	/** The sep view1. */
+	private JSeparator sepView1 = null;
+	
+	/** The mni back. */
+	private JMenuItem mniBack = null;
+	
+	/** The mni forward. */
+	private JMenuItem mniForward = null;
+	
+	/** The sep view go to1. */
+	private JSeparator sepViewGoTo1 = null;
+	
+	/** The mni home. */
+	private JMenuItem mniHome = null;
+	
+	/** The mni add bookmark. */
+	private JMenuItem mniAddBookmark = null;
+	
+	/** The sep bookmark1. */
+	private JSeparator sepBookmark1 = null;
+	
+	/** The mni auto run. */
+	private JCheckBoxMenuItem mniAutoRun = null;
+	
+	/** The pnl center. */
+	private JPanel pnlCenter = null;
+	
+	/** The tlb chat. */
+	private JToolBar tlbChat = null;
+	
+	/** The tgl keypad. */
+	private JToggleButton tglKeypad = null;
+	
+	/** The tlb keypad. */
+	private JToolBar tlbKeypad = null;
+	
+	/** The btn key. */
+	private JButton btnKey[] = null;
+	
+	/** The pnl keypad. */
+	private JPanel pnlKeypad = null;
+	
+	/** The scr message. */
+	private JScrollPane scrMessage = null;
+	
+	/** The mni debug. */
+	private JCheckBoxMenuItem mniDebug = null;
+	
+	/**
+	 * This is the default constructor.
 	 */
 	public JavierGUI() {
 		super();
 		initialize();
 		this.setJavier(getJavier());
+		btnHome.doClick();
 	}
 
 	/**
@@ -104,7 +213,7 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 		this.setSize(378, 283);
 		this.setJMenuBar(getMenubar());
 		this.setContentPane(getJContentPane());
-		this.setTitle("JFrame");
+		this.setTitle("JAVIER");
 	}
 
 	/**
@@ -195,11 +304,7 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 			btnHome.setText("Home");
 			btnHome.addActionListener(new java.awt.event.ActionListener() {
 				public void actionPerformed(java.awt.event.ActionEvent e) {
-					try {
-						javier.mainLoop(homeAddress);
-					} catch (IOException ex) {
-						ex.printStackTrace();
-					}
+					goTo(homeAddress);
 				}
 			});
 		}
@@ -248,8 +353,14 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 	private JTextField getTxtAddress() {
 		if (txtAddress == null) {
 			txtAddress = new JTextField();
-			txtAddress.setText("http://localhost/javier/samples/hw.vxml");
 			txtAddress.setPreferredSize(new Dimension(200, 20));
+			txtAddress.addKeyListener(new java.awt.event.KeyAdapter() {
+				public void keyTyped(java.awt.event.KeyEvent e) {
+					if(e.getKeyChar() == '\n') {
+						goTo(txtAddress.getText(), HistoryManagement.CLEAR);
+					}
+				}
+			});
 		}
 		return txtAddress;
 	}
@@ -280,8 +391,7 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 			txtInput.addKeyListener(new java.awt.event.KeyAdapter() {
 				public void keyTyped(java.awt.event.KeyEvent e) {
 					if(e.getKeyChar() == '\n' || e.getKeyChar() == '#') {
-						txtMessage.setText("You: " + txtInput.getText() + "\n" + txtMessage.getText());
-						txtInput.setText("");
+						inputReady = true;
 					}
 				}
 			});
@@ -300,16 +410,7 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 			btnGo.setText("Go");
 			btnGo.addActionListener(new java.awt.event.ActionListener() {
 				public void actionPerformed(java.awt.event.ActionEvent e) {
-					new Thread() {
-						@Override
-						public void run() {
-							try {
-								javier.mainLoop(txtAddress.getText());
-							} catch (IOException ex) {
-								ex.printStackTrace();
-							}
-						}
-					}.start();
+					goTo(txtAddress.getText(), HistoryManagement.CLEAR);
 				}
 			});
 		}
@@ -326,7 +427,7 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 		    String ttsProvider = "MSSAPI";
 		    String voiceName = "Rosa";
 		    String logFile = "Javier.log";
-		    homeAddress = "http://localhost/sictel.php";
+		    homeAddress = "http://localhost/javier/default.vxml";
 			
 		    try {
 			    Properties properties = new Properties();
@@ -392,6 +493,7 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 		String strInput = "";
 		String timeout = javier.getProperty("timeout");
 		long time = 0;
+		inputReady = false;
 		
 		if(timeout.indexOf("ms") >= 0) {
 			timeout = timeout.replaceFirst("ms", "");
@@ -415,6 +517,10 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 			}
 			
 			if(strInput.contains("#")) {
+				break;
+			}
+			
+			if(inputReady) {
 				break;
 			}
 			
@@ -504,6 +610,7 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 			mnuView.setText("View");
 			mnuView.add(getMnuGoTo());
 			mnuView.add(getSepView1());
+			mnuView.add(getMniDebug());
 			mnuView.add(getMniAutoRun());
 			mnuView.add(getMniViewVXML());
 			mnuView.add(getMniViewJS());
@@ -522,14 +629,10 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 			mniOpen.setText("Open...");
 			mniOpen.addActionListener(new java.awt.event.ActionListener() {
 				public void actionPerformed(java.awt.event.ActionEvent e) {
-					String url = JOptionPane.showInputDialog("Address");
+					String url = JOptionPane.showInputDialog(mniOpen,"Address","Open",JOptionPane.QUESTION_MESSAGE);
 					if(url != null) {
-						if(url.equals("")) {
-							try {
-								javier.mainLoop(url);
-							} catch (IOException ex) {
-								ex.printStackTrace();
-							}
+						if(!url.equals("")) {
+							goTo(url, HistoryManagement.CLEAR);
 						}
 					} 
 				}
@@ -591,6 +694,14 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 			btnBack = new JButton();
 			btnBack.setText("<");
 			btnBack.setToolTipText("Back");
+			btnBack.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+					if(historyIndex > 0) {
+						historyIndex --;
+						goTo(history.get(historyIndex), HistoryManagement.NAVIGATE);
+					}
+				}
+			});
 		}
 		return btnBack;
 	}
@@ -605,6 +716,14 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 			btnForward = new JButton();
 			btnForward.setText(">");
 			btnForward.setToolTipText("Forward");
+			btnForward.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+					if(historyIndex < history.size() - 1) {
+						historyIndex ++;
+						goTo(history.get(historyIndex), HistoryManagement.NAVIGATE);
+					}
+				}
+			});
 		}
 		return btnForward;
 	}
@@ -647,6 +766,11 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 		if (mniBack == null) {
 			mniBack = new JMenuItem();
 			mniBack.setText("Back");
+			mniBack.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+					btnBack.doClick();
+				}
+			});
 		}
 		return mniBack;
 	}
@@ -660,6 +784,11 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 		if (mniForward == null) {
 			mniForward = new JMenuItem();
 			mniForward.setText("Forward");
+			mniForward.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+					btnForward.doClick();
+				}
+			});
 		}
 		return mniForward;
 	}
@@ -685,6 +814,11 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 		if (mniHome == null) {
 			mniHome = new JMenuItem();
 			mniHome.setText("Home");
+			mniHome.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+					btnHome.doClick();
+				}
+			});
 		}
 		return mniHome;
 	}
@@ -867,8 +1001,83 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 		return scrMessage;
 	}
 
+	/**
+	 * This method initializes mniDebug.
+	 * 
+	 * @return javax.swing.JCheckBoxMenuItem
+	 */
+	private JCheckBoxMenuItem getMniDebug() {
+		if (mniDebug == null) {
+			mniDebug = new JCheckBoxMenuItem();
+			mniDebug.setText("Debug");
+			mniDebug.addItemListener(new java.awt.event.ItemListener() {
+				public void itemStateChanged(java.awt.event.ItemEvent e) {
+					javier.setDebugEnabled(mniDebug.isSelected());
+				}
+			});
+		}
+		return mniDebug;
+	}
+
+	/**
+	 * The main method.
+	 * 
+	 * @param args
+	 *            the args
+	 */
 	public static void main( String[] args ) {
     	(new JavierGUI()).setVisible(true);
     }
+	
+	/**
+	 * Go to.
+	 * 
+	 * @param url
+	 *            the url
+	 */
+	private void goTo(String url) {
+		goTo(url, HistoryManagement.ADD);
+	}
+	
+	/**
+	 * Go to.
+	 * 
+	 * @param management
+	 *            the management
+	 * @param url
+	 *            the url
+	 */
+	private void goTo(String url, HistoryManagement management) {
+		txtAddress.setText(url);
+		
+		new Thread() {
+			@Override
+			public void run() {
+				try {
+					javier.mainLoop(txtAddress.getText());
+				} catch (IOException ex) {
+					ex.printStackTrace();
+				}
+				txtAddress.requestFocus();
+			}
+		}.start();
+		txtInput.requestFocus();
+				
+		if(management == HistoryManagement.ADD) {
+			historyIndex ++;						
+		}
+		
+		if(historyIndex >= history.size()) {
+			history.add(url);								
+		} else {
+			history.set(historyIndex, url);			
+		}
+		
+		if(management == HistoryManagement.CLEAR) {
+			while(history.size() > historyIndex + 1) {
+				history.remove(history.size() - 1);
+			}
+		}
+	}
 
 }  //  @jve:decl-index=0:visual-constraint="97,30"

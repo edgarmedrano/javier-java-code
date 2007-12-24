@@ -117,36 +117,42 @@ function __parse_input(input, grammars, slot, mode) {
 	var match;
 	var weight = 0;
 	var result = new Object();
-	result.match = false;
 	
-	for(var i = 0; i < grammars.length; i++) {
-	    var rules = grammars[i].rules;
-		for(var j = 0; j < rules.length; j++) {
-			if(rules[j].type.indexOf(mode) >= 0
-					|| rules[j].type == "any" 
-					|| mode == "any"
-					|| rules[j].type == "" 
-					|| mode == "")  {
-				match = input.match(rules[j].regexp);
-				if(match) {
-					if(match[0].length > length || grammars[i].weight > weight) {
-						weight = grammars[i].weight;
-						length = match[0].length;
-						result.next = grammars[i].next;
-						result.event = grammars[i].event;
-						result.expr = grammars[i].expr;
-						result.eventexpr = grammars[i].eventexpr;
-						result.match = true;
-						if(rules[j].value) {
-							result.value = rules[j].value;
-						} else {
-							result.value = match[0];
+	if(grammars.length > 0) {
+		result.match = false;
+		for(var i = 0; i < grammars.length; i++) {
+		    var rules = grammars[i].rules;
+			for(var j = 0; j < rules.length; j++) {
+				if(rules[j].type.indexOf(mode) >= 0
+						|| rules[j].type == "any" 
+						|| mode == "any"
+						|| rules[j].type == "" 
+						|| mode == "")  {
+					match = input.match(rules[j].regexp);
+					if(match) {
+						if(match[0].length > length || grammars[i].weight > weight) {
+							weight = grammars[i].weight;
+							length = match[0].length;
+							result.next = grammars[i].next;
+							result.event = grammars[i].event;
+							result.expr = grammars[i].expr;
+							result.eventexpr = grammars[i].eventexpr;
+							result.match = true;
+							if(rules[j].value) {
+								result.value = rules[j].value;
+							} else {
+								result.value = match[0];
+							}
 						}
-					}
-				}	
+					}	
+				}
 			}
 		}
+	} else {
+		result.match = true;
+		result.value = input;
 	}
+	
 	
 	return result;
 }
