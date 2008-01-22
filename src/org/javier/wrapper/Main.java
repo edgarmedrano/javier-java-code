@@ -18,39 +18,52 @@ import org.javier.agi.AGIService;
 import org.tanukisoftware.wrapper.WrapperManager;
 import org.tanukisoftware.wrapper.WrapperListener;
                     
-public class Main
-    implements WrapperListener
+/**
+ * Javier AGI Service Wrapper. This class allows JAVIER to be runned as a system service,
+ * like a windows service or UNIX deamon.
+ * @see WrapperListener
+ */
+public class Main implements WrapperListener
 {
+    
+    /** The AGI Service. */
     private AGIService m_app;
 
-    /*---------------------------------------------------------------
-     * Constructors
-     *-------------------------------------------------------------*/
-    private Main()
-    {
-    }
-
-    /*---------------------------------------------------------------
-     * WrapperListener Methods
-     *-------------------------------------------------------------*/
+    /** SECURITY ERROR. */
+    public final int ERR_SECURITY = 1;
+    
+    /** IO EXCEPTION ERROR. */
+    public final int ERR_IO_EXCEPTION = 2;
+    
+    /** CLASS NOT FOUND ERROR. */
+    public final int ERR_CLASS_NOT_FOUND = 3;
+    
+    /** NO SUCH METHOD ERROR. */
+    public final int ERR_NO_SUCH_METHOD = 4;
+    
     /**
-     * The start method is called when the WrapperManager is signaled by the 
-     *	native wrapper code that it can start its application.  This
-     *	method call is expected to return, so a new thread should be launched
-     *	if necessary.
-     *
-     * @param args List of arguments used to initialize the application.
-     *
-     * @return Any error code if the application should exit on completion
-     *         of the start method.  If there were no problems then this
-     *         method should return null.
-     */
-    public Integer start( String[] args )
-    {
+	 * The Constructor.
+	 */
+    private Main() { }
+
+    /**
+	 * The start method is called when the WrapperManager is signaled by the
+	 * native wrapper code that it can start its application. This method call
+	 * is expected to return, so a new thread should be launched if necessary.
+	 * 
+	 * @param args
+	 *            List of arguments used to initialize the application.
+	 * 
+	 * @return Any error code if the application should exit on completion of
+	 *         the start method. If there were no problems then this method
+	 *         should return null.
+	 */
+    public Integer start( String[] args ) {
 		String handlerClass = AGIScript.class.getName();
 		String bindAddress = "";
 		int port = 4573;
 		int poolSize = 24;
+		int errorCode = 0;
 		
 	    try {
 		    Properties properties = new Properties();
@@ -72,17 +85,25 @@ public class Main
 		
 		try {
 			m_app = new AGIService(handlerClass,port,poolSize,bindAddress);
-			m_app.run();
+			(new Thread(m_app)).start();
 		} catch (SecurityException e) {
+			errorCode = ERR_SECURITY;
 			e.printStackTrace();
 		} catch (IOException e) {
+			errorCode = ERR_IO_EXCEPTION;
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
+			errorCode = ERR_CLASS_NOT_FOUND;
 			e.printStackTrace();
 		} catch (NoSuchMethodException e) {
+			errorCode = ERR_NO_SUCH_METHOD;
 			e.printStackTrace();
 		}
     	
+		if(errorCode != 0) {
+			return new Integer(errorCode);
+		}
+		
         return null;
     }
 
@@ -105,8 +126,12 @@ public class Main
 	 */
     public int stop( int exitCode )
     {
-        m_app.shutdown();
+		int errorCode = m_app.shutdown();
         
+		if(errorCode != 0) {
+			return errorCode;
+		}
+		
         return exitCode;
     }
     

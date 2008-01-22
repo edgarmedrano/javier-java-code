@@ -27,7 +27,7 @@ import org.javier.util.NullOutputStream;
 /**
  * FastAGI Server.
  */
-public class AGIService {
+public class AGIService implements Runnable {
 	
 	/** The server socket. */
 	protected final ServerSocket serverSocket;
@@ -66,7 +66,7 @@ public class AGIService {
 	    } catch (IOException e) {
 	    	
 	    }
-		
+	    
 		try {
 			new AGIService(handlerClass,port,poolSize,bindAddress).run();
 		} catch (SecurityException e) {
@@ -117,6 +117,18 @@ public class AGIService {
 				AGIConnection agi = new AGIConnection(socket.getInputStream()
 						,socket.getOutputStream()
 						,new NullOutputStream());
+				
+				/*handle commands sent through the AGIConnection*/
+				/*
+				try {
+					String value = agi.get_variable("APPLICATION");
+					if(!value.equals("")) {
+						//handle command				
+					}
+				} catch (AGIException e1) {
+					e1.printStackTrace();
+				}
+				*/
 				
 				try {
 					AGIScript script = (AGIScript) handlerConstructor.newInstance();
@@ -243,15 +255,17 @@ public class AGIService {
 	/**
 	 * Shutdown.
 	 */
-	public void shutdown() {
+	public int shutdown() {
 		pool.shutdown(); // Disable new tasks from being submitted
 		try {
 			// Wait a while for existing tasks to terminate
 			if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
 				pool.shutdownNow(); // Cancel currently executing tasks
 				// Wait a while for tasks to respond to being cancelled
-				if (!pool.awaitTermination(60, TimeUnit.SECONDS))
+				if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
 					System.err.println("Pool did not terminate");
+					return 1;
+				}
 			}
 		} catch (InterruptedException ie) {
 			// (Re-)Cancel if current thread also interrupted
@@ -259,5 +273,6 @@ public class AGIService {
 			// Preserve interrupt status
 			Thread.currentThread().interrupt();
 		}
+		return 0;
 	}
 }
