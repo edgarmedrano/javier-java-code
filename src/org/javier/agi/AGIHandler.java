@@ -64,22 +64,23 @@ public class AGIHandler
 	public void execute(AGIConnection agi) {
 		this.agi = agi;
 		
-	    String ttsProvider = "MSSAPI";
-	    String voiceName = "Rosa";
-	    String homeAddress = "http://localhost/sictel.php";
+	    String ttsProvider = "org.javier.browser.handlers.SAPIOutputHandler";
+	    String voiceName = "";
+	    String homeAddress = "http://localhost/javier/default.vxml";
 	    String logFile = "Javier.log";
 		
 	    try {
 		    Properties properties = new Properties();
+		    File file = new File("AGIService.conf");
 		    
-	        properties.load(new FileInputStream("Javier.properties"));
+	        properties.load(new FileInputStream(file));
 	        ttsProvider = properties.getProperty("tts_class", ttsProvider);
 		    voiceName = properties.getProperty("tts_voice", voiceName);
 	    	homeAddress = properties.getProperty("home_address", homeAddress);
 	    	logFile = properties.getProperty("log_file", logFile);
 	    	soundsDir = properties.getProperty("sounds_dir", soundsDir);
 	    } catch (IOException e) {
-	    	
+			e.printStackTrace();
 	    }
 		
 		ComThread.InitMTA();		

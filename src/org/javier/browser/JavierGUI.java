@@ -424,15 +424,15 @@ public class JavierGUI extends JFrame implements InputHandler, JavierListener, O
 	 */
 	private Javier getJavier() {
 		if(javier == null) {
-		    String ttsProvider = "MSSAPI";
-		    String voiceName = "Rosa";
+		    String ttsProvider = "org.javier.browser.handlers.SAPIOutputHandler";
+		    String voiceName = "";
 		    String logFile = "Javier.log";
 		    homeAddress = "http://localhost/javier/default.vxml";
 			
 		    try {
 			    Properties properties = new Properties();
 			    
-		        properties.load(new FileInputStream("Javier.properties"));
+		        properties.load(new FileInputStream("JavierGUI.conf"));
 		        ttsProvider = properties.getProperty("tts_class", ttsProvider);
 			    voiceName = properties.getProperty("tts_voice", voiceName);
 		    	homeAddress = properties.getProperty("home_address", homeAddress);

@@ -52,7 +52,7 @@ public class AGIService implements Runnable {
 	    try {
 		    Properties properties = new Properties();
 		    
-	        properties.load(new FileInputStream("AGIService.properties"));
+	        properties.load(new FileInputStream("AGIService.conf"));
 		    handlerClass = properties.getProperty("handler_class", handlerClass);
 	    	bindAddress = properties.getProperty("bind_address", bindAddress);
 		    
