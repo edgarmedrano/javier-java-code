@@ -1,1 +1,0 @@
-call javier.bat http://localhost/sictel.php Rosa
