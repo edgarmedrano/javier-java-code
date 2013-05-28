@@ -83,47 +83,47 @@ public class AGIHandler
 			e.printStackTrace();
 	    }
 		
-		ComThread.InitMTA();		
-		ttsVoice = (SpVoice) createActiveXObject(SpVoice.class);
-		ISpeechObjectTokens voices = ttsVoice.GetVoices();
-		
-		for(int i = 0; i < voices.Count(); i++) {
-			if(voices.Item(i).GetDescription().indexOf(voiceName) >= 0) {
-				ttsVoice.setVoice(voices.Item(i));
-				break;
+		ComThread.InitMTA();
+		try {
+			ttsVoice = (SpVoice) createActiveXObject(SpVoice.class);
+			ISpeechObjectTokens voices = ttsVoice.GetVoices();
+			
+			for(int i = 0; i < voices.Count(); i++) {
+				if(voices.Item(i).GetDescription().indexOf(voiceName) >= 0) {
+					ttsVoice.setVoice(voices.Item(i));
+					break;
+				}
 			}
-		}
-		javier = new Javier(this,new MSXMLHTTPNetworkHandler());
-		javier.addJavierListener(this);
-		javier.addOutputListener(this);
-		/*
-		javier.setDebugEnabled(true);
-		*/
-		/*
-		javier.addLogListener(new ConsoleLogHandler());
-		*/
-		try {
-			javier.addLogListener(new StreamLogHandler(logFile));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}		
-		
-		// Translate AGI properties to VoiceXML properties
-		try {
-			String value = agi.get_variable("TIMEOUT(digit)");
-			if(!value.equals("")) {
-				javier.setProperty("timeout", value + "s");				
+			javier = new Javier(this,new MSXMLHTTPNetworkHandler());
+			javier.addJavierListener(this);
+			javier.addOutputListener(this);
+			/*
+			javier.addLogListener(new ConsoleLogHandler());
+			*/
+			try {
+				javier.addLogListener(new StreamLogHandler(logFile));
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}		
+			
+			// Translate AGI properties to VoiceXML properties
+			try {
+				String value = agi.get_variable("TIMEOUT(digit)");
+				if(!value.equals("")) {
+					javier.setProperty("timeout", value + "s");				
+				}
+			} catch (AGIException e1) {
+				e1.printStackTrace();
 			}
-		} catch (AGIException e1) {
-			e1.printStackTrace();
+			
+			try {
+				javier.mainLoop(homeAddress);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} finally {
+			ComThread.Release();
 		}
-		
-		try {
-			javier.mainLoop(homeAddress);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		ComThread.Release(); 				
 	}
 
 	/**

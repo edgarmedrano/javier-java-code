@@ -19,6 +19,7 @@ import java.lang.reflect.Proxy;
 import java.util.Date;
 import java.util.Hashtable;
 
+import com.jacob.com.ComFailException;
 import com.jacob.com.Dispatch;
 import com.jacob.com.DispatchEvents;
 import com.jacob.com.Variant;
@@ -441,7 +442,18 @@ public class OleAutomation implements InvocationHandler {
 	 */
 	public Object invokeProxyGet(Class<?> returnClazz, String name, Object args[]) 
 		throws Exception {
-		Dispatch result = Dispatch.get(activeX, name).toDispatch();
+		Variant aux = Dispatch.get(activeX, name);		
+		Dispatch result;
+
+		if(aux.isNull()) {
+			return null;
+		}
+		
+		result = aux.toDispatch();
+		if(result.m_pDispatch == 0) {
+			return null;
+		}
+		
 		return OleAutomation.createActiveXObject(result, returnClazz);
 	}
 	
@@ -460,13 +472,19 @@ public class OleAutomation implements InvocationHandler {
 	 */
 	public Object invokeProxyMethod(Class<?> returnClazz, String name, Object args[]) 
 		throws Exception {
+		Variant aux;
 		Dispatch result;
 		if (null != args) {
-			result = Dispatch.callN(activeX, name, args).toDispatch(); 
+			aux = Dispatch.callN(activeX, name, args); 
 		} else {
-			result = Dispatch.call(activeX, name).toDispatch(); 
+			aux = Dispatch.call(activeX, name); 
 		}
 		
+		if(aux.isNull()) {
+			return null;
+		}
+		
+		result = aux.toDispatch();
 		if(result.m_pDispatch == 0) {
 			return null;
 		}

@@ -620,12 +620,13 @@ public class Javier
 		try {
 			document = document.execute(this);
 		} catch(Exception e) {
-			if(e.getMessage().equals("error")
-				|| e.getMessage().equals("exit")
-				|| e.getMessage().equals("telephone.disconnect")) {
+			if("error".equals(e.getMessage())
+				|| "exit".equals(e.getMessage())
+				|| "telephone.disconnect".equals(e.getMessage())) {
 				end(END_CODE_SUCCESS);
 			} else {
 				error(this,"Error: " + e.getClass().getName() + " " + e.getMessage());
+				e.printStackTrace();
 				end(END_CODE_ERROR);			
 			}
 		}
