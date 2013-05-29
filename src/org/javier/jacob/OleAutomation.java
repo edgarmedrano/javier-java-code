@@ -19,7 +19,6 @@ import java.lang.reflect.Proxy;
 import java.util.Date;
 import java.util.Hashtable;
 
-import com.jacob.com.ComFailException;
 import com.jacob.com.Dispatch;
 import com.jacob.com.DispatchEvents;
 import com.jacob.com.Variant;

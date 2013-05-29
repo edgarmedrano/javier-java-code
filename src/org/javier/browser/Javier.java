@@ -626,7 +626,6 @@ public class Javier
 				end(END_CODE_SUCCESS);
 			} else {
 				error(this,"Error: " + e.getClass().getName() + " " + e.getMessage());
-				e.printStackTrace();
 				end(END_CODE_ERROR);			
 			}
 		}

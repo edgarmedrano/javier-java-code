@@ -211,7 +211,7 @@ public class AGIHandler
 			result = buffer;
 			buffer = "";
 		} catch (Exception e) {
-			e.printStackTrace();
+			throw(new IOException(e.getMessage(),e.getCause()));
 		}
 		
 		return result;
@@ -234,8 +234,9 @@ public class AGIHandler
 				buffer += agi.stream_file(fileName,"0123456789");
 			} catch (Exception e) {
 				throw(new IOException(e.getMessage(),e.getCause()));
+			} finally {
+				file.delete();
 			}
-			file.delete();
 		}
 	}
 

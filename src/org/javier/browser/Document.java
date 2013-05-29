@@ -11,6 +11,7 @@
 
 package org.javier.browser;
 
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Hashtable;
 import java.util.Properties;
@@ -258,14 +259,42 @@ public class Document {
 			nextDoc = invocableEngine.invokeFunction("aDocument","x");
 			setState(State.EXECUTED);
 		} catch(ScriptException e) {
-			Matcher matcher = re_excep.matcher(e.getMessage());
-			if(matcher.find()) {
-				if(matcher.groupCount() >= 2) {
-					throw(new ScriptException(matcher.group(2).trim()));
-				} 
-				if(matcher.groupCount() >= 1) {
-					throw(new ScriptException(matcher.group(1).trim()));
-				} 
+			String message = e.getMessage();
+			
+			if(message.contains("IOException") && message.contains("hangup")) {
+				throw(new ScriptException("telephone.disconnect"));
+			} else {
+				if(message.contains("telephone.disconnect")) {
+					throw(new ScriptException("telephone.disconnect"));
+				} else {
+					Matcher matcher = re_excep.matcher(message);
+					String line = "";
+					int linenum = -1;
+					
+					if(matcher.find()) {
+						if(matcher.groupCount() >= 2) {
+							line = matcher.group(2).trim();
+						} else {
+							if(matcher.groupCount() >= 1) {
+								line = matcher.group(1).trim();
+							} 
+						}
+						
+						try {
+							linenum = Integer.parseInt(line);
+						} catch (Exception nfe) {
+							/*Do nothing*/
+						}
+						
+						if(linenum > 0) {
+							String lines[] = jsFunction.split("\\n");
+							
+							if(linenum < lines.length) {
+								throw(new ScriptException(url + " at " + line + ": " + lines[linenum]));																		
+							}
+						}
+					}
+				}
 			}
 			
 			throw(e);
