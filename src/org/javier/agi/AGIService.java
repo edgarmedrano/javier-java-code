@@ -141,24 +141,24 @@ public class AGIService implements Runnable {
 					e1.printStackTrace();
 				} catch (InvocationTargetException e1) {
 					e1.printStackTrace();
+				} finally {
+					agi.close();					
 				}
-				
-				agi.close();
 			} catch (AGIException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
+			} finally {
+				try {
+					socket.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				
+				/*Try to free resources*/
+				socket = null;
+				System.gc();				
 			}
-			
-			try {
-				socket.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			
-			/*Try to free resources*/
-			socket = null;
-			System.gc();
 		}
 	}
 

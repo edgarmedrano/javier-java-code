@@ -500,6 +500,10 @@ public class Javier
 				e.printStackTrace();
 			}
 			
+			if(document == null) {
+				break;
+			}
+			
 			if(document.getUrl().equals("")) {
 				break;
 			}

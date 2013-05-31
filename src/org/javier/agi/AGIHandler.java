@@ -70,7 +70,8 @@ public class AGIHandler
 	    String logFile = "Javier.log";
 		
 	    try {
-		    Properties properties = new Properties();
+
+	    	Properties properties = new Properties();
 		    File file = new File("AGIService.conf");
 		    
 	        properties.load(new FileInputStream(file));

@@ -885,59 +885,66 @@ public class AGIConnection {
 		String line = readLine().trim();
 		String response = "";
 		err.printf("    RESULT_LINE: %s\n", line);
-		Matcher matcher = re_code.matcher(line);
-		if(matcher.find()) {
-			code = matcher.groupCount() >= 1 ? Integer.valueOf(matcher.group(1)) : 0;
-			response = matcher.groupCount() >= 2 ? matcher.group(2) : "";
-		}
 		
-		if(code == 200) {
-			matcher = re_kv.matcher(response);
-			String key = null;
-			String value = null;
-			String data = null;
-			
+		if(line.startsWith("HANGUP")) {
+			throw(new AGIResultHangup("User hungup during execution"));			
+		} else {
+			Matcher matcher = re_code.matcher(line);
 			if(matcher.find()) {
-				key = matcher.groupCount() >= 1 ? matcher.group(1) : null;
-				value = matcher.groupCount() >= 2 ? matcher.group(2) : null;
-				data = matcher.groupCount() >= 3 ? matcher.group(3) : null;
+				code = matcher.groupCount() >= 1 ? Integer.valueOf(matcher.group(1)) : 0;
+				response = matcher.groupCount() >= 2 ? matcher.group(2) : "";
 			}
 			
-			key = key == null? "" : key;
-			value = value == null? "" : value;
-			data = data == null? "" : data;
-			
-			if(!key.equals("")) {
-				result.put(key, new String[] {value, data});
-			}
-			
-			// If user hangs up... we get "hangup" in the data
-			if(data.equals("hangup")) {
-				throw(new AGIResultHangup("User hungup during execution"));
-			}
+			if(code == 200) {
+				matcher = re_kv.matcher(response);
+				String key = null;
+				String value = null;
+				String data = null;
+				
+				if(matcher.find()) {
+					key = matcher.groupCount() >= 1 ? matcher.group(1) : null;
+					value = matcher.groupCount() >= 2 ? matcher.group(2) : null;
+					data = matcher.groupCount() >= 3 ? matcher.group(3) : null;
+				}
+				
+				key = key == null? "" : key;
+				value = value == null? "" : value;
+				data = data == null? "" : data;
+				
+				if(!key.equals("")) {
+					result.put(key, new String[] {value, data});
+				}
+				
+				// If user hangs up... we get "hangup" in the data
+				if(data.equals("hangup")) {
+					throw(new AGIResultHangup("User hungup during execution"));
+				}
 
-			if(key.equals("result") && value.equals("-1")) {
-				throw(new AGIAppError("Error executing application, or hangup"));
-			}
+				if(key.equals("result") && value.equals("-1")) {
+					throw(new AGIAppError("Error executing application, or hangup"));
+				}
 
-			err.printf("    RESULT_DICT: %s\n", result);
-			return result;
-		} else if(code == 510) {
-			throw(new AGIInvalidCommand(response));
-		} else if(code == 520) {
-			StringBuilder usage = new StringBuilder(line);
-			line = readLine().trim();
-			while(!line.substring(0,3).equals("520")) {
+				err.printf("    RESULT_DICT: %s\n", result);
+				return result;
+			} else if(code == 511) {
+				throw(new AGIResultHangup("User hungup during execution"));			
+			} else if(code == 510) {
+				throw(new AGIInvalidCommand(response));
+			} else if(code == 520) {
+				StringBuilder usage = new StringBuilder(line);
+				line = readLine().trim();
+				while(!line.substring(0,3).equals("520")) {
+					usage.append(line);
+					usage.append("\n");
+					line = readLine().trim();
+				}
 				usage.append(line);
 				usage.append("\n");
-				line = readLine().trim();
-			}
-			usage.append(line);
-			usage.append("\n");
-			throw(new AGIUsageError(usage.toString()));
-		} else {
-			throw(new AGIUnknownError(code, "Unhandled code or undefined response"));
-		}
+				throw(new AGIUsageError(usage.toString()));
+			} else {
+				throw(new AGIUnknownError(code, "Unhandled code or undefined response"));
+			}			
+		}		
 	}
     
     /**

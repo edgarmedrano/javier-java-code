@@ -11,7 +11,6 @@
 
 package org.javier.browser;
 
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Hashtable;
 import java.util.Properties;
@@ -261,7 +260,9 @@ public class Document {
 		} catch(ScriptException e) {
 			String message = e.getMessage();
 			
-			if(message.contains("IOException") && message.contains("hangup")) {
+			if(message.contains("IOException") 
+				&& (message.contains("hangup")
+					|| message.contains("hungup"))) {
 				throw(new ScriptException("telephone.disconnect"));
 			} else {
 				if(message.contains("telephone.disconnect")) {

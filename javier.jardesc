@@ -11,15 +11,7 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
-        <javaElement handleIdentifier="=Javier/src&lt;org.javier.wrapper"/>
-        <javaElement handleIdentifier="=Javier/src&lt;org.javier.agi"/>
-        <javaElement handleIdentifier="=Javier/src&lt;org.javier.jacob.SAPI"/>
-        <javaElement handleIdentifier="=Javier/src&lt;org.javier.browser"/>
-        <javaElement handleIdentifier="=Javier/src&lt;org.javier.jacob"/>
-        <javaElement handleIdentifier="=Javier/src&lt;org.javier.browser.event"/>
-        <javaElement handleIdentifier="=Javier/src&lt;org.javier.jacob.MSXML"/>
-        <javaElement handleIdentifier="=Javier/src&lt;org.javier.util"/>
-        <javaElement handleIdentifier="=Javier/src&lt;org.javier.browser.handlers"/>
+        <javaElement handleIdentifier="=Javier/src"/>
         <file path="/Javier/src/LICENSE.txt"/>
     </selectedElements>
 </jardesc>
