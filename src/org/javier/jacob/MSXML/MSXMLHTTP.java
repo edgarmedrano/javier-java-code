@@ -85,6 +85,23 @@ public interface MSXMLHTTP extends Dispatchable {
 	@OleProperty String getStatusText(); 
 	 
 	/**
+	 * Gets the number of milliseconds that the browser is to wait for a server response. Default value is 0.
+	 * 
+	 * @return the timeout in milliseconds
+	 * @since Windows Internet Explorer 8
+	 * @throws Exception If there's no Windows Internet Explorer 8 or better installed/supported.
+	 */
+	@OleProperty int getTimeout();
+	
+	/**
+	 * Sets number of milliseconds that the browser is to wait for a server response. Default value is 0.
+	 * @param timeout The timeout in milliseconds
+	 * @since Windows Internet Explorer 8
+	 * @throws Exception If there's no Windows Internet Explorer 8 or better installed/supported.
+	 */
+	@OleProperty void setTimeout(int timeout); 
+	
+	/**
 	 * Cancels the current HTTP request.
 	 */
 	@OleMethod void abort(); 

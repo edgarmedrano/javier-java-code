@@ -60,7 +60,9 @@ public class AGIHandler
 		return file_index;
 	}
 	
-
+	/* (non-Javadoc)
+	 * @see com.orderlysoftware.orderlycalls.asterisk.agi.AGIProcessor#processCall(com.orderlysoftware.orderlycalls.asterisk.agi.AGIConnection)
+	 */
 	public void execute(AGIConnection agi) {
 		this.agi = agi;
 		
@@ -107,18 +109,16 @@ public class AGIHandler
 				e.printStackTrace();
 			}		
 			
-			// Translate AGI properties to VoiceXML properties
 			try {
+				// Get digit timeout and share it with Javier
 				String value = agi.get_variable("TIMEOUT(digit)");
 				if(!value.equals("")) {
 					javier.setProperty("timeout", value + "s");				
 				}
-			} catch (AGIException e1) {
-				e1.printStackTrace();
-			}
-			
-			try {
+				
 				javier.mainLoop(homeAddress);
+			} catch (AGIException e) {
+				e.printStackTrace();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

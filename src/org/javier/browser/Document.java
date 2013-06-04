@@ -64,6 +64,11 @@ public class Document {
 		Boolean, Date, Digits, Currency, Number, Phone, Time, Custom
 	}
 	
+	/**
+	 * Default timeout in milliseconds
+	 */
+	static protected final int DEFAULT_TIMEOUT = 60 * 1000;
+	
 	/** Maps the tag names to {@link Tag} enum. */
 	static protected final Hashtable<String, Type> htTypeEnum 
 		= new Hashtable<String, Type>(Type.values().length);
@@ -146,7 +151,7 @@ public class Document {
 	 * @param url the document's url
 	 */
 	public Document(String url) {
-		this(url,"GET","",0,0,0);
+		this(url,"GET","",DEFAULT_TIMEOUT,0,0);
 		state = State.CREATED;
 	}
 		
